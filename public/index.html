@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JRS PDV V4</title>
+  <link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+</head>
+<body>
+  <div id="loginView" class="login-wrap">
+    <form id="loginForm" class="login-card">
+      <div class="login-logo">JRS</div>
+      <h1>JRS PDV V4</h1>
+      <p>Dashboard no estilo JRS_PDV_ERP_V5_BROWSER</p>
+      <label>Usuário<input type="text" name="username" value="admin" /></label>
+      <label>Senha<input type="password" name="password" value="123456" /></label>
+      <button type="submit">Entrar</button>
+      <small>Usuário padrão: admin | Senha: 123456</small>
+    </form>
+  </div>
+
+  <div id="appView" class="hidden page-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logoBox">JRS</div>
+        <div>
+          <div class="brandTitle">JRS PDV</div>
+          <div class="brandSub">ERP / Sistema Comercial</div>
+        </div>
+      </div>
+      <div class="topbar-center">JRS PDV Dashboard</div>
+      <div class="right">
+        <span id="liveBadge" class="pill"><span class="dot"></span> Tempo real</span>
+        <span class="pill"><span id="userInfo"></span></span>
+        <button id="logoutBtn" class="btn btnGhost btnSmall">Sair</button>
+      </div>
+    </header>
+
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sideUser">
+          <div class="avatar">JG</div>
+          <div class="meta">
+            <div class="name" id="sideUserName">Administrador</div>
+            <div class="role" id="sideUserRole">ONLINE</div>
+          </div>
+        </div>
+
+        <div class="menuTitle">Menu principal</div>
+        <nav class="nav">
+          <div class="navGroupLabel">Operação</div>
+          <a class="tablink active" data-tab="dashboard"><span class="ico"><i class='fa-solid fa-chart-line'></i></span> Dashboard</a>
+          <a class="tablink" data-tab="caixa"><span class="ico"><i class='fa-solid fa-cash-register'></i></span> Caixa</a>
+          <a class="tablink" data-tab="entrada"><span class="ico"><i class='fa-solid fa-file-import'></i></span> Entrada</a>
+          <a class="tablink" data-tab="clientes"><span class="ico"><i class='fa-solid fa-address-book'></i></span> Clientes</a>
+          <a class="tablink" data-tab="assistencia"><span class="ico"><i class='fa-solid fa-screwdriver-wrench'></i></span> Assistência</a>
+          <a class="tablink" data-tab="transferencia"><span class="ico"><i class='fa-solid fa-right-left'></i></span> Transferência</a>
+          <a class="tablink" data-tab="estoque"><span class="ico"><i class='fa-solid fa-boxes-stacked'></i></span> Estoque</a>
+          <a class="tablink" data-tab="financeiro"><span class="ico"><i class='fa-solid fa-coins'></i></span> Financeiro</a>
+          <a class="tablink" data-tab="funcionarios"><span class="ico"><i class='fa-solid fa-user-group'></i></span> Funcionários</a>
+          <div class="navGroupLabel admin-only">Administração</div>
+          <a class="tablink admin-only" data-tab="cadastros"><span class="ico"><i class='fa-solid fa-users'></i></span> Cadastros</a>
+          <a class="tablink" data-tab="notas"><span class="ico"><i class='fa-solid fa-receipt'></i></span> Notas</a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <div class="container">
+          <div class="headRow">
+            <div>
+              <h1 id="viewTitle">Dashboard Gerencial</h1>
+              <p id="viewSubtitle">Bem-vindo ao JRS PDV. Aqui está o resumo das suas operações.</p>
+            </div>
+            <div class="headActions">
+              <div class="search">
+                <span>⌕</span>
+                <input id="globalSearch" type="text" placeholder="Buscar telas ou comandos..." />
+              </div>
+              <div class="storeFilterCard">
+                <label>Filtro global de lojas</label>
+                <select id="globalStoreFilter" multiple></select>
+              </div>
+            </div>
+          </div>
+
+          <section class="tab-panel active" id="dashboard">
+            <div class="grid4" id="cards"></div>
+
+            <div class="grid2">
+              <div class="card">
+                <div class="sectionHead">
+                  <h2>Resumo de estoque por loja e produto</h2>
+                  <span class="mutedTag">Atualização automática</span>
+                </div>
+                <div class="table-wrap tall">
+                  <table id="stockSummaryTable">
+                    <thead><tr><th>Loja</th><th>Produto</th><th>Preço</th><th>Disponível</th><th>Assistência</th><th>Reembalo</th><th>Vendidos</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="stack">
+                <div class="card">
+                  <div class="sectionHead"><h2>Ranking de vendedores</h2></div>
+                  <div class="table-wrap small"><table id="rankSellerTable"><thead><tr><th>Vendedor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table></div>
+                </div>
+                <div class="card">
+                  <div class="sectionHead"><h2>Ranking de produtos</h2></div>
+                  <div class="table-wrap small"><table id="rankProductTable"><thead><tr><th>Produto</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid2 lower">
+              <div class="card">
+                <div class="sectionHead"><h2>Últimos clientes cadastrados</h2></div>
+                <div class="table-wrap mid"><table id="salesTable"><thead><tr><th>Data</th><th>Loja</th><th>Nome</th><th>CPF</th><th>Telefone</th><th>Origem</th></tr></thead><tbody></tbody></table></div>
+              </div>
+              <div class="card">
+                <div class="sectionHead"><h2>Últimas movimentações</h2></div>
+                <div class="table-wrap mid"><table id="movesTable"><thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Movimento</th><th>Obs</th></tr></thead><tbody></tbody></table></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="caixa">
+            <div class="grid2 even">
+              <div class="card"><div class="sectionHead"><h2>Abertura de caixa</h2></div><form id="cashOpenForm" class="form-grid"><label>Loja<select name="store_id" id="cashOpenStore"></select></label><label>Valor de abertura<input type="number" step="0.01" name="opening_amount" value="0" /></label><button type="submit" class="btn btnPrimary">Abrir caixa</button></form></div>
+              <div class="card"><div class="sectionHead"><h2>Fechamento de caixa</h2></div><form id="cashCloseForm" class="form-grid"><label>Loja<select name="store_id" id="cashCloseStore"></select></label><label>Valor de fechamento<input type="number" step="0.01" name="closing_amount" value="0" /></label><button type="submit" class="btn btnPrimary">Fechar caixa</button></form></div>
+            </div>
+            <div class="card"><div class="sectionHead"><h2>Histórico de caixas</h2></div><div class="table-wrap"><table id="cashTable"><thead><tr><th>Loja</th><th>Aberto por</th><th>Abertura</th><th>Valor abertura</th><th>Fechado por</th><th>Fechamento</th><th>Valor fechamento</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+          </section>
+
+          <section class="tab-panel" id="entrada">
+            <div class="grid2 even">
+              <div class="card">
+                <div class="sectionHead"><h2>Importar XML da nota</h2><span class="mutedTag">NFe XML</span></div>
+                <form id="xmlParseForm" class="form-grid">
+                  <label class="full">Cole aqui o XML da NFe<textarea id="xmlInput" name="xml" rows="10" placeholder="Cole o conteúdo completo do XML aqui"></textarea></label>
+                  <button type="submit" class="btn btnPrimary">Ler XML</button>
+                </form>
+                <div id="xmlPreview" class="xmlPreview hidden">
+                  <div class="xmlHead">
+                    <div><strong>Fornecedor:</strong> <span id="xmlSupplier">-</span></div>
+                    <div><strong>Nota:</strong> <span id="xmlNoteNumber">-</span></div>
+                    <div><strong>Emissão:</strong> <span id="xmlIssueDate">-</span></div>
+                  </div>
+                  <div class="table-wrap small">
+                    <table id="xmlItemsTable">
+                      <thead><tr><th>Código</th><th>Barcode</th><th>Produto</th><th>Qtd</th><th>Unitário</th><th>Total</th></tr></thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                  <div class="xmlActions">
+                    <button type="button" id="applyXmlToEntry" class="btn btnPrimary">Aplicar no formulário</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card"><div class="sectionHead"><h2>Entrada de nota com IMEIs</h2></div><form id="entryForm" class="form-grid">
+                <label>Loja<select name="store_id" id="entryStore"></select></label>
+                <label>Fornecedor<input type="text" name="supplier_name" placeholder="Fornecedor" /></label>
+                <label>Número da nota<input type="text" name="note_number" placeholder="NF 123" /></label>
+                <label>Produto<select name="product_id" id="entryProduct"></select></label>
+                <label>Leitura por código de barras<input type="text" id="entryBarcode" placeholder="Bipar código de barras" /></label>
+                <div></div>
+                <label class="full">IMEIs (1 por linha)<textarea name="imeis" rows="8"></textarea></label>
+                <label class="full">Observações<input type="text" name="notes" placeholder="Lote, cor, etc." /></label>
+                <button type="submit" class="btn btnPrimary">Registrar entrada</button>
+              </form></div>
+            </div>
+          </section>
+
+          
+
+          
+          <section class="tab-panel" id="clientes">
+            <div class="grid2 even">
+              <div class="card">
+                <div class="sectionHead"><h2>Cadastro de clientes</h2><span class="mutedTag">App + Dashboard</span></div>
+                <form id="customerForm" class="form-grid">
+                  <label>Nome<input type="text" name="name" /></label>
+                  <label>CPF<input type="text" name="cpf" /></label>
+                  <label>Telefone<input type="text" name="phone" /></label>
+                  <label>Loja<select name="store_id" id="customerStore"></select></label>
+                  <button type="submit" class="btn btnPrimary">Cadastrar cliente</button>
+                </form>
+              </div>
+              <div class="card">
+                <div class="sectionHead"><h2>Clientes cadastrados</h2><span class="mutedTag">Base central</span></div>
+                <div class="table-wrap small">
+                  <table id="customersTable">
+                    <thead><tr><th>Data</th><th>Loja</th><th>Nome</th><th>CPF</th><th>Telefone</th><th>Origem</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="assistencia">
+            <div class="grid2 even">
+              <div class="card"><div class="sectionHead"><h2>Saída para assistência ou reembalo</h2></div><form id="serviceOutForm" class="form-grid">
+                <label>Loja<select name="store_id" id="serviceStore"></select></label>
+                <label>Produto<select name="product_id" id="serviceProduct"></select></label>
+                <label>IMEI<select name="imei" id="serviceImei"></select></label>
+                <label>Destino<input type="text" name="destination_name" placeholder="Assistência X" /></label>
+                <label>Tipo<select name="move_type"><option value="ASSISTANCE">Assistência</option><option value="REPACK">Reembalo</option></select></label>
+                <label class="full">Observações<input type="text" name="notes" /></label>
+                <button type="submit" class="btn btnPrimary">Registrar saída</button>
+              </form></div>
+              <div class="card"><div class="sectionHead"><h2>Retorno ao estoque</h2></div><form id="serviceReturnForm" class="form-grid">
+                <label>IMEI<input type="text" name="imei" placeholder="IMEI" /></label>
+                <label class="full">Observações<input type="text" name="notes" /></label>
+                <button type="submit" class="btn btnPrimary">Devolver ao estoque</button>
+              </form></div>
+            </div>
+            <div class="card"><div class="sectionHead"><h2>Histórico assistência / reembalo</h2></div><div class="table-wrap"><table id="serviceTable"><thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Tipo</th><th>Status</th><th>Destino</th><th>Obs</th></tr></thead><tbody></tbody></table></div></div>
+          </section>
+
+          <section class="tab-panel" id="transferencia">
+            <div class="card"><div class="sectionHead"><h2>Transferência entre lojas</h2></div><form id="transferForm" class="form-grid">
+              <label>Loja origem<select name="from_store_id" id="transferFromStore"></select></label>
+              <label>Loja destino<select name="to_store_id" id="transferToStore"></select></label>
+              <label>Produto<select name="product_id" id="transferProduct"></select></label>
+              <label>IMEI<select name="imei" id="transferImei"></select></label>
+              <label class="full">Observações<input type="text" name="notes" placeholder="Reposição de quiosque" /></label>
+              <button type="submit" class="btn btnPrimary">Transferir aparelho</button>
+            </form></div>
+            <div class="card"><div class="sectionHead"><h2>Histórico de transferências</h2></div><div class="table-wrap"><table id="transferTable"><thead><tr><th>Data</th><th>Origem</th><th>Destino</th><th>Produto</th><th>IMEI</th><th>Solicitado por</th><th>Obs</th></tr></thead><tbody></tbody></table></div></div>
+          </section>
+
+          <section class="tab-panel" id="estoque">
+            <div class="card filters"><div class="sectionHead"><h2>Consulta de IMEIs</h2></div><div class="filter-row">
+              <select id="imeiFilterStore"></select><select id="imeiFilterProduct"></select>
+              <select id="imeiFilterStatus"><option value="">Todos os status</option><option value="AVAILABLE">Disponível</option><option value="ASSISTANCE">Assistência</option><option value="REPACK">Reembalo</option><option value="SOLD">Vendido</option></select>
+              <input type="text" id="imeiFilterBarcode" placeholder="Código de barras" />
+              <button id="reloadImeis" class="btn btnPrimary">Atualizar</button>
+            </div></div>
+            <div class="card"><div class="table-wrap"><table id="imeiTable"><thead><tr><th>Loja</th><th>Produto</th><th>IMEI</th><th>Status</th><th>Documento</th><th>Obs</th><th>Atualizado</th></tr></thead><tbody></tbody></table></div></div>
+          </section>
+
+          <section class="tab-panel" id="financeiro">
+            <div class="grid2 even">
+              <div class="card"><div class="sectionHead"><h2>Lançar despesa</h2></div><form id="expenseForm" class="form-grid">
+                <label>Loja<select name="store_id" id="expenseStore"></select></label>
+                <label>Categoria<input type="text" name="category" placeholder="Categoria" /></label>
+                <label class="full">Descrição<input type="text" name="description" placeholder="Descrição" /></label>
+                <label>Valor<input type="number" step="0.01" name="amount" /></label>
+                <label>Vencimento<input type="date" name="due_date" /></label>
+                <label>Status<select name="status"><option value="OPEN">Em aberto</option><option value="PAID">Pago</option></select></label>
+                <button type="submit" class="btn btnPrimary">Registrar despesa</button>
+              </form></div>
+              <div class="card"><div class="sectionHead"><h2>Lançar receita manual</h2></div><form id="incomeForm" class="form-grid">
+                <label>Loja<select name="store_id" id="incomeStore"></select></label>
+                <label>Categoria<input type="text" name="category" placeholder="Categoria" /></label>
+                <label class="full">Descrição<input type="text" name="description" placeholder="Descrição" /></label>
+                <label>Valor<input type="number" step="0.01" name="amount" /></label>
+                <label>Vencimento<input type="date" name="due_date" /></label>
+                <label>Status<select name="status"><option value="OPEN">Em aberto</option><option value="PAID">Recebido</option></select></label>
+                <button type="submit" class="btn btnPrimary">Registrar receita</button>
+              </form></div>
+            </div>
+            <div class="card" id="financeCards"></div>
+            <div class="card"><div class="sectionHead"><h2>Lançamentos financeiros</h2></div><div class="table-wrap"><table id="financeTable"><thead><tr><th>Data</th><th>Loja</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr></thead><tbody></tbody></table></div></div>
+          </section>
+
+          
+          <section class="tab-panel" id="funcionarios">
+            <div class="grid2 even">
+              <div class="card">
+                <div class="sectionHead"><h2>Cadastro de funcionários</h2><span class="mutedTag">Por loja</span></div>
+                <form id="employeeForm" class="form-grid">
+                  <label>Nome<input type="text" name="name" /></label>
+                  <label>Cargo<input type="text" name="role_name" value="Vendedor" /></label>
+                  <label>Loja<select name="store_id" id="employeeStore"></select></label>
+                  <button type="submit" class="btn btnPrimary">Cadastrar funcionário</button>
+                </form>
+              </div>
+              <div class="card">
+                <div class="sectionHead"><h2>Funcionários cadastrados</h2><span class="mutedTag">Filtro multi-loja</span></div>
+                <div class="table-wrap small">
+                  <table id="employeesTable">
+                    <thead><tr><th>Loja</th><th>Nome</th><th>Cargo</th><th>Status</th><th>Cadastro</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="tab-panel admin-only" id="cadastros">
+            <div class="grid2 even">
+              <div class="card"><div class="sectionHead"><h2>Novo usuário</h2></div><form id="userForm" class="form-grid">
+                <label>Nome<input type="text" name="name" /></label>
+                <label>Usuário<input type="text" name="username" /></label>
+                <label>Senha<input type="text" name="password" /></label>
+                <label>Perfil<select name="role"><option value="ADMIN">ADMIN</option><option value="USER">USER</option></select></label>
+                <button type="submit" class="btn btnPrimary">Criar usuário</button>
+              </form></div>
+              <div class="card"><div class="sectionHead"><h2>Novo vendedor</h2></div><form id="sellerForm" class="form-grid">
+                <label>Loja<select name="store_id" id="sellerStore"></select></label>
+                <label>Nome<input type="text" name="name" /></label>
+                <button type="submit" class="btn btnPrimary">Criar vendedor</button>
+              </form></div>
+            </div>
+            <div class="grid2 even">
+              <div class="card"><div class="sectionHead"><h2>Usuários</h2></div><div class="table-wrap small"><table id="usersTable"><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Ativo</th></tr></thead><tbody></tbody></table></div></div>
+              <div class="card"><div class="sectionHead"><h2>Vendedores</h2></div><div class="table-wrap small"><table id="sellerTable"><thead><tr><th>Loja</th><th>Nome</th><th>Ativo</th></tr></thead><tbody></tbody></table></div></div>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="notas">
+            <div class="grid2 even">
+              <div class="card"><div class="sectionHead"><h2>Notas de entrada</h2></div><div class="table-wrap small"><table id="notesEntryTable"><thead><tr><th>Data</th><th>Loja</th><th>Nota</th><th>Produto</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table></div></div>
+              <div class="card"><div class="sectionHead"><h2>Notas de saída</h2></div><div class="table-wrap small"><table id="notesExitTable"><thead><tr><th>Data</th><th>Loja</th><th>Nota</th><th>Produto</th><th>Qtd</th><th>Motivo</th></tr></thead><tbody></tbody></table></div></div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <footer class="appFooter">
+      <div>JRS PDV ERP V7</div>
+      <div>Sistema comercial operacional</div>
+    </footer>
+    <aside id="toast"></aside>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,283 @@
+{
+  "stores": [
+    {
+      "id": 1,
+      "name": "REALME GUARARAPES"
+    },
+    {
+      "id": 2,
+      "name": "REALME RECIFE"
+    },
+    {
+      "id": 3,
+      "name": "REALME RIO MAR"
+    },
+    {
+      "id": 4,
+      "name": "REALME BOA VISTA"
+    },
+    {
+      "id": 5,
+      "name": "REALME TACARUNA"
+    },
+    {
+      "id": 6,
+      "name": "REALME PATTEO"
+    },
+    {
+      "id": 7,
+      "name": "REALME PAULISTA"
+    },
+    {
+      "id": 8,
+      "name": "REALME CARUARU"
+    },
+    {
+      "id": 9,
+      "name": "REALME DIFUSORA"
+    },
+    {
+      "id": 10,
+      "name": "REALME TAMANDARE"
+    },
+    {
+      "id": 11,
+      "name": "REALME RIO FORMOSO"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "Note 70",
+      "price": 1099,
+      "barcode": "7891000000001"
+    },
+    {
+      "id": 2,
+      "name": "C71",
+      "price": 1549,
+      "barcode": "7891000000002"
+    },
+    {
+      "id": 3,
+      "name": "REALME C75",
+      "price": 1799,
+      "barcode": "7891000000003"
+    },
+    {
+      "id": 4,
+      "name": "REALME C75 5G",
+      "price": 1999,
+      "barcode": "7891000000004"
+    },
+    {
+      "id": 5,
+      "name": "REALME C85",
+      "price": 2099,
+      "barcode": "7891000000005"
+    },
+    {
+      "id": 6,
+      "name": "REALME 12",
+      "price": 2199,
+      "barcode": "7891000000006"
+    },
+    {
+      "id": 7,
+      "name": "REALME 12 pro",
+      "price": 3699,
+      "barcode": "7891000000007"
+    },
+    {
+      "id": 8,
+      "name": "REALME 14t",
+      "price": 2599,
+      "barcode": "7891000000008"
+    },
+    {
+      "id": 9,
+      "name": "REALME 14 pro",
+      "price": 4199,
+      "barcode": "7891000000009"
+    },
+    {
+      "id": 10,
+      "name": "REALME 15 5g",
+      "price": 3699,
+      "barcode": "7891000000010"
+    },
+    {
+      "id": 11,
+      "name": "REALME 15 pro",
+      "price": 4999,
+      "barcode": "7891000000011"
+    },
+    {
+      "id": 12,
+      "name": "REALME Gt 7",
+      "price": 5099,
+      "barcode": "7891000000012"
+    },
+    {
+      "id": 13,
+      "name": "REALME 15 PRO GOT",
+      "price": 5999,
+      "barcode": "7891000000013"
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "name": "Administrador",
+      "username": "admin",
+      "password": "123456",
+      "role": "ADMIN",
+      "active": 1
+    }
+  ],
+  "sellers": [
+    {
+      "id": 1,
+      "store_id": 1,
+      "name": "Vendedor GUARARAPES A",
+      "active": 1
+    },
+    {
+      "id": 2,
+      "store_id": 1,
+      "name": "Vendedor GUARARAPES B",
+      "active": 1
+    },
+    {
+      "id": 3,
+      "store_id": 2,
+      "name": "Vendedor RECIFE A",
+      "active": 1
+    },
+    {
+      "id": 4,
+      "store_id": 2,
+      "name": "Vendedor RECIFE B",
+      "active": 1
+    },
+    {
+      "id": 5,
+      "store_id": 3,
+      "name": "Vendedor MAR A",
+      "active": 1
+    },
+    {
+      "id": 6,
+      "store_id": 3,
+      "name": "Vendedor MAR B",
+      "active": 1
+    },
+    {
+      "id": 7,
+      "store_id": 4,
+      "name": "Vendedor VISTA A",
+      "active": 1
+    },
+    {
+      "id": 8,
+      "store_id": 4,
+      "name": "Vendedor VISTA B",
+      "active": 1
+    },
+    {
+      "id": 9,
+      "store_id": 5,
+      "name": "Vendedor TACARUNA A",
+      "active": 1
+    },
+    {
+      "id": 10,
+      "store_id": 5,
+      "name": "Vendedor TACARUNA B",
+      "active": 1
+    },
+    {
+      "id": 11,
+      "store_id": 6,
+      "name": "Vendedor PATTEO A",
+      "active": 1
+    },
+    {
+      "id": 12,
+      "store_id": 6,
+      "name": "Vendedor PATTEO B",
+      "active": 1
+    },
+    {
+      "id": 13,
+      "store_id": 7,
+      "name": "Vendedor PAULISTA A",
+      "active": 1
+    },
+    {
+      "id": 14,
+      "store_id": 7,
+      "name": "Vendedor PAULISTA B",
+      "active": 1
+    },
+    {
+      "id": 15,
+      "store_id": 8,
+      "name": "Vendedor CARUARU A",
+      "active": 1
+    },
+    {
+      "id": 16,
+      "store_id": 8,
+      "name": "Vendedor CARUARU B",
+      "active": 1
+    },
+    {
+      "id": 17,
+      "store_id": 9,
+      "name": "Vendedor DIFUSORA A",
+      "active": 1
+    },
+    {
+      "id": 18,
+      "store_id": 9,
+      "name": "Vendedor DIFUSORA B",
+      "active": 1
+    },
+    {
+      "id": 19,
+      "store_id": 10,
+      "name": "Vendedor TAMANDARE A",
+      "active": 1
+    },
+    {
+      "id": 20,
+      "store_id": 10,
+      "name": "Vendedor TAMANDARE B",
+      "active": 1
+    },
+    {
+      "id": 21,
+      "store_id": 11,
+      "name": "Vendedor FORMOSO A",
+      "active": 1
+    },
+    {
+      "id": 22,
+      "store_id": 11,
+      "name": "Vendedor FORMOSO B",
+      "active": 1
+    }
+  ],
+  "imei_units": [],
+  "stock_movements": [],
+  "note_entries": [],
+  "note_exits": [],
+  "sales": [],
+  "service_moves": [],
+  "finance_entries": [],
+  "cash_registers": [],
+  "transfers": [],
+  "customers": [],
+  "employees": []
+}

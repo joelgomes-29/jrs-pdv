@@ -3,171 +3,237 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JRS PDV V5</title>
+  <title>JRS PDV · Sistema Comercial REALME</title>
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <div id="loginView" class="login-wrap">
-    <form id="loginForm" class="login-card">
+
+<!-- ═══════ LOGIN ═══════ -->
+<div id="loginView" class="login-wrap">
+  <form id="loginForm" class="login-card">
+    <div class="login-header">
       <div class="login-logo">JRS</div>
-      <h1>JRS PDV V5</h1>
-      <p>Sistema Comercial · REALME</p>
-      <label>Usuário<input type="text" name="username" value="admin" autocomplete="username"/></label>
-      <label>Senha<input type="password" name="password" value="123456" autocomplete="current-password"/></label>
-      <button type="submit">Entrar</button>
-    </form>
-  </div>
+      <div class="login-title">JRS PDV</div>
+      <div class="login-sub">Sistema Comercial · REALME Multi-Loja</div>
+    </div>
+    <div class="login-fields">
+      <label>Usuário<input type="text" name="username" value="admin" autocomplete="username" placeholder="Digite seu usuário"/></label>
+      <label>Senha<input type="password" name="password" value="123456" autocomplete="current-password" placeholder="••••••"/></label>
+      <button type="submit" class="login-btn"><i class="fa fa-right-to-bracket"></i> Entrar no sistema</button>
+    </div>
+    <div class="login-footer">JRS Soluções · V9 · Todos os direitos reservados</div>
+  </form>
+</div>
 
-  <div id="appView" class="hidden page-shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logoBox">JRS</div>
-        <div>
-          <div class="brandTitle">JRS PDV</div>
-          <div class="brandSub">ERP · Sistema Comercial</div>
+<!-- ═══════ APP ═══════ -->
+<div id="appView" class="hidden page-shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logoBox">JRS</div>
+      <div>
+        <div class="brandTitle">JRS PDV</div>
+        <div class="brandSub">ERP · Multi-Loja</div>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <div class="search">
+        <span><i class="fa fa-magnifying-glass"></i></span>
+        <input id="globalSearch" type="text" placeholder="Buscar módulo... (Enter)" />
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span id="liveBadge" class="pill"><span class="dot"></span> Tempo real</span>
+      <span class="pill"><span id="userInfo"></span></span>
+      <button id="logoutBtn" class="btn btnGhost btnSmall"><i class="fa fa-right-from-bracket"></i> Sair</button>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sideUser">
+        <div class="avatar">JG</div>
+        <div class="meta">
+          <div class="name" id="sideUserName">Administrador</div>
+          <div class="role" id="sideUserRole">ONLINE</div>
         </div>
       </div>
-      <div class="topbar-center">
-        <div class="search">
-          <span><i class="fa fa-magnifying-glass"></i></span>
-          <input id="globalSearch" type="text" placeholder="Buscar módulo..." />
-        </div>
-      </div>
-      <div class="right">
-        <span id="liveBadge" class="pill"><span class="dot"></span> Tempo real</span>
-        <span class="pill"><span id="userInfo"></span></span>
-        <button id="logoutBtn" class="btn btnGhost btnSmall"><i class="fa fa-right-from-bracket"></i> Sair</button>
-      </div>
-    </header>
 
-    <div class="app">
-      <aside class="sidebar">
-        <div class="sideUser">
-          <div class="avatar">JG</div>
-          <div class="meta">
-            <div class="name" id="sideUserName">Administrador</div>
-            <div class="role" id="sideUserRole">ONLINE</div>
+      <div class="storeFilterCard">
+        <label><i class="fa fa-filter"></i> Filtro de loja</label>
+        <select id="globalStoreFilter" multiple></select>
+      </div>
+
+      <div class="menuTitle">Menu principal</div>
+      <nav class="nav">
+        <div class="navGroupLabel">Operação</div>
+        <a class="tablink active" data-tab="dashboard"><span class="ico"><i class="fa-solid fa-chart-line"></i></span> Dashboard</a>
+        <a class="tablink" data-tab="vendas"><span class="ico"><i class="fa-solid fa-cash-register"></i></span> Vendas / PDV</a>
+        <a class="tablink" data-tab="caixa"><span class="ico"><i class="fa-solid fa-vault"></i></span> Caixa</a>
+        <a class="tablink" data-tab="entrada"><span class="ico"><i class="fa-solid fa-file-import"></i></span> Entrada de Nota</a>
+        <a class="tablink" data-tab="clientes"><span class="ico"><i class="fa-solid fa-address-book"></i></span> Clientes</a>
+        <a class="tablink" data-tab="assistencia"><span class="ico"><i class="fa-solid fa-screwdriver-wrench"></i></span> Assistência</a>
+        <a class="tablink" data-tab="transferencia"><span class="ico"><i class="fa-solid fa-right-left"></i></span> Transferência</a>
+        <a class="tablink" data-tab="estoque"><span class="ico"><i class="fa-solid fa-boxes-stacked"></i></span> Estoque / IMEIs</a>
+        <div class="navGroupLabel">Financeiro</div>
+        <a class="tablink" data-tab="financeiro"><span class="ico"><i class="fa-solid fa-coins"></i></span> Financeiro</a>
+        <a class="tablink" data-tab="relatorios"><span class="ico"><i class="fa-solid fa-chart-bar"></i></span> Relatórios</a>
+        <div class="navGroupLabel">Gestão</div>
+        <a class="tablink" data-tab="funcionarios"><span class="ico"><i class="fa-solid fa-user-group"></i></span> Funcionários</a>
+        <a class="tablink" data-tab="notas"><span class="ico"><i class="fa-solid fa-receipt"></i></span> Notas</a>
+        <div class="navGroupLabel admin-only">Administração</div>
+        <a class="tablink admin-only" data-tab="cadastros"><span class="ico"><i class="fa-solid fa-users-gear"></i></span> Cadastros</a>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+      <div class="container">
+
+        <div class="headRow">
+          <div>
+            <h1 id="viewTitle">Dashboard Gerencial</h1>
+            <p id="viewSubtitle">Resumo operacional das lojas REALME.</p>
           </div>
+          <div class="headActions"></div>
         </div>
 
-        <div class="storeFilterCard">
-          <label><i class="fa fa-filter"></i> Filtro de loja</label>
-          <select id="globalStoreFilter" multiple></select>
-        </div>
+        <!-- ═══ DASHBOARD ═══ -->
+        <section class="tab-panel active" id="dashboard">
+          <div class="grid4" id="cards"></div>
 
-        <div class="menuTitle">Menu principal</div>
-        <nav class="nav">
-          <div class="navGroupLabel">Operação</div>
-          <a class="tablink active" data-tab="dashboard"><span class="ico"><i class="fa-solid fa-chart-line"></i></span> Dashboard</a>
-          <a class="tablink" data-tab="vendas"><span class="ico"><i class="fa-solid fa-cash-register"></i></span> Vendas / PDV</a>
-          <a class="tablink" data-tab="caixa"><span class="ico"><i class="fa-solid fa-vault"></i></span> Caixa</a>
-          <a class="tablink" data-tab="entrada"><span class="ico"><i class="fa-solid fa-file-import"></i></span> Entrada de Nota</a>
-          <a class="tablink" data-tab="clientes"><span class="ico"><i class="fa-solid fa-address-book"></i></span> Clientes</a>
-          <a class="tablink" data-tab="assistencia"><span class="ico"><i class="fa-solid fa-screwdriver-wrench"></i></span> Assistência</a>
-          <a class="tablink" data-tab="transferencia"><span class="ico"><i class="fa-solid fa-right-left"></i></span> Transferência</a>
-          <a class="tablink" data-tab="estoque"><span class="ico"><i class="fa-solid fa-boxes-stacked"></i></span> Estoque / IMEIs</a>
-          <div class="navGroupLabel">Financeiro</div>
-          <a class="tablink" data-tab="financeiro"><span class="ico"><i class="fa-solid fa-coins"></i></span> Financeiro</a>
-          <a class="tablink" data-tab="relatorios"><span class="ico"><i class="fa-solid fa-chart-bar"></i></span> Relatórios</a>
-          <div class="navGroupLabel">Gestão</div>
-          <a class="tablink" data-tab="funcionarios"><span class="ico"><i class="fa-solid fa-user-group"></i></span> Funcionários</a>
-          <a class="tablink" data-tab="notas"><span class="ico"><i class="fa-solid fa-receipt"></i></span> Notas</a>
-          <div class="navGroupLabel admin-only">Administração</div>
-          <a class="tablink admin-only" data-tab="cadastros"><span class="ico"><i class="fa-solid fa-users-gear"></i></span> Cadastros</a>
-        </nav>
-      </aside>
-
-      <main class="content">
-        <div class="container">
-          <div class="headRow">
-            <div>
-              <h1 id="viewTitle">Dashboard Gerencial</h1>
-              <p id="viewSubtitle">Resumo operacional das lojas REALME.</p>
+          <div class="grid2">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-chart-bar"></i> Vendas — últimos 7 dias</h2><span class="mutedTag">Tempo real</span></div>
+              <canvas id="chartVendas" height="110"></canvas>
             </div>
-            <div class="headActions"></div>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-circle-half-stroke"></i> Receitas vs Despesas</h2></div>
+              <canvas id="chartFinanceiro" height="110"></canvas>
+            </div>
           </div>
 
-          <!-- DASHBOARD -->
-          <section class="tab-panel active" id="dashboard">
-            <div class="grid4" id="cards"></div>
-            <div class="grid2">
-              <div class="card">
-                <div class="sectionHead"><h2><i class="fa fa-chart-bar"></i> Vendas — últimos 7 dias</h2></div>
-                <canvas id="chartVendas" height="100"></canvas>
-              </div>
-              <div class="card">
-                <div class="sectionHead"><h2><i class="fa fa-circle-half-stroke"></i> Receitas vs Despesas</h2></div>
-                <canvas id="chartFinanceiro" height="100"></canvas>
+          <div class="grid2">
+            <div class="card">
+              <div class="sectionHead"><h2>Resumo de estoque por loja</h2><span class="mutedTag">Atualizado</span></div>
+              <div class="table-wrap tall">
+                <table id="stockSummaryTable">
+                  <thead><tr><th>Loja</th><th>Produto</th><th>Preço</th><th>Disp.</th><th>Assist.</th><th>Reemb.</th><th>Vendidos</th></tr></thead>
+                  <tbody></tbody>
+                </table>
               </div>
             </div>
-            <div class="grid2">
+            <div class="stack">
               <div class="card">
-                <div class="sectionHead"><h2>Resumo de estoque por loja</h2><span class="mutedTag">Tempo real</span></div>
-                <div class="table-wrap tall">
-                  <table id="stockSummaryTable">
-                    <thead><tr><th>Loja</th><th>Produto</th><th>Preço</th><th>Disp.</th><th>Assist.</th><th>Reemb.</th><th>Vendidos</th></tr></thead>
-                    <tbody></tbody>
-                  </table>
+                <div class="sectionHead"><h2><i class="fa fa-trophy"></i> Ranking vendedores</h2></div>
+                <div class="table-wrap small">
+                  <table id="rankSellerTable"><thead><tr><th>Vendedor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
                 </div>
               </div>
-              <div class="stack">
-                <div class="card">
-                  <div class="sectionHead"><h2>Ranking de vendedores</h2></div>
-                  <div class="table-wrap small"><table id="rankSellerTable"><thead><tr><th>Vendedor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table></div>
-                </div>
-                <div class="card">
-                  <div class="sectionHead"><h2>Ranking de produtos</h2></div>
-                  <div class="table-wrap small"><table id="rankProductTable"><thead><tr><th>Produto</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table></div>
+              <div class="card">
+                <div class="sectionHead"><h2><i class="fa fa-star"></i> Ranking produtos</h2></div>
+                <div class="table-wrap small">
+                  <table id="rankProductTable"><thead><tr><th>Produto</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
                 </div>
               </div>
             </div>
-            <div class="grid2 lower">
-              <div class="card">
-                <div class="sectionHead"><h2>Últimos clientes cadastrados</h2></div>
-                <div class="table-wrap mid"><table id="salesTable"><thead><tr><th>Data</th><th>Loja</th><th>Nome</th><th>CPF</th><th>Telefone</th><th>Origem</th></tr></thead><tbody></tbody></table></div>
-              </div>
-              <div class="card">
-                <div class="sectionHead"><h2>Últimas movimentações</h2></div>
-                <div class="table-wrap mid"><table id="movesTable"><thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Mov.</th><th>Obs</th></tr></thead><tbody></tbody></table></div>
-              </div>
-            </div>
-          </section>
+          </div>
 
-          <!-- VENDAS / PDV -->
-          <section class="tab-panel" id="vendas">
-            <div class="grid2 even">
-              <div class="card">
-                <div class="sectionHead"><h2><i class="fa fa-cash-register"></i> Registrar Venda</h2><span class="mutedTag">PDV</span></div>
-                <form id="saleForm" class="form-grid">
-                  <label>Loja<select name="store_id" id="saleStore"></select></label>
-                  <label>Produto<select name="product_id" id="saleProduct"><option value="">Selecione</option></select></label>
-                  <label>Bipar código de barras<input type="text" id="saleBarcode" placeholder="Bipar ou digitar barcode" /></label>
-                  <label>IMEI disponível<select name="imei" id="saleImei"><option value="">Selecione produto e loja</option></select></label>
-                  <label>Vendedor<select name="seller_name" id="saleSeller"></select></label>
-                  <label>Nome do cliente<input type="text" name="customer_name" placeholder="Nome do cliente" /></label>
-                  <label>Forma de pagamento
-                    <select name="payment_method">
-                      <option value="DINHEIRO">Dinheiro</option>
-                      <option value="PIX">PIX</option>
-                      <option value="CARTAO_CREDITO">Cartão de Crédito</option>
-                      <option value="CARTAO_DEBITO">Cartão de Débito</option>
-                      <option value="CREDIARIO">Crediário</option>
-                    </select>
-                  </label>
-                  <label>Valor de venda (R$)<input type="number" step="0.01" name="sale_price" id="salePrice" placeholder="0,00" /></label>
-                  <button type="submit" class="btn btnPrimary full"><i class="fa fa-check"></i> Registrar Venda</button>
-                </form>
+          <div class="grid2">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-user-plus"></i> Últimos clientes</h2></div>
+              <div class="table-wrap mid"><table id="salesTable"><thead><tr><th>Data</th><th>Loja</th><th>Nome</th><th>CPF</th><th>Telefone</th><th>Origem</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-clock-rotate-left"></i> Últimas movimentações</h2></div>
+              <div class="table-wrap mid"><table id="movesTable"><thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Tipo</th><th>Obs</th></tr></thead><tbody></tbody></table></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ VENDAS / PDV ═══ -->
+        <section class="tab-panel" id="vendas">
+          <div class="grid2 even">
+
+            <!-- FORM PDV -->
+            <div class="card">
+              <div class="sectionHead">
+                <h2><i class="fa fa-cash-register"></i> Registrar Venda</h2>
+                <span class="mutedTag">PDV</span>
               </div>
+              <form id="saleForm" class="form-grid">
+                <label>Loja
+                  <select name="store_id" id="saleStore"></select>
+                </label>
+                <label>Produto
+                  <select name="product_id" id="saleProduct"><option value="">Selecione o produto</option></select>
+                </label>
+                <label class="full">Bipar código de barras
+                  <input type="text" id="saleBarcode" placeholder="⬛ Bipador ou digitar barcode..." />
+                </label>
+                <label class="full">IMEI disponível
+                  <select name="imei" id="saleImei"><option value="">— Selecione loja e produto primeiro —</option></select>
+                </label>
+                <label>Vendedor
+                  <select name="seller_name" id="saleSeller"><option value="">Selecione</option></select>
+                </label>
+                <label>Cliente (opcional)
+                  <input type="text" name="customer_name" placeholder="Nome do cliente" />
+                </label>
+                <label class="full">Forma de pagamento
+                  <select name="payment_method" id="salePayment">
+                    <option value="DINHEIRO">💵 Dinheiro</option>
+                    <option value="PIX">📱 PIX</option>
+                    <option value="CARTAO_CREDITO">💳 Cartão de Crédito</option>
+                    <option value="CARTAO_DEBITO">💳 Cartão de Débito</option>
+                    <option value="CREDIARIO">📋 Crediário</option>
+                  </select>
+                </label>
+                <label class="full">Valor de venda (R$)
+                  <input type="number" step="0.01" min="0" name="sale_price" id="salePrice" placeholder="0,00" />
+                </label>
+                <button type="submit" class="btn btnSuccess full btn-lg"><i class="fa fa-check-circle"></i> Confirmar Venda</button>
+              </form>
+            </div>
+
+            <!-- RESUMO PDV + HISTÓRICO -->
+            <div class="stack">
+              <!-- Resumo da venda -->
+              <div class="pdv-summary" id="pdvSummary">
+                <div class="pdv-empty" id="pdvEmpty">
+                  <i class="fa fa-cash-register"></i>
+                  <p>Selecione produto e IMEI<br>para ver o resumo</p>
+                </div>
+                <div id="pdvInfo" class="hidden">
+                  <div class="sum-title"><i class="fa fa-receipt"></i> Resumo da venda</div>
+                  <div class="sum-product" id="sumProduct">—</div>
+                  <div class="sum-imei" id="sumImei">IMEI: —</div>
+                  <div class="sum-price" id="sumPrice">R$ 0,00</div>
+                  <div class="sum-label">Valor de venda</div>
+                  <div class="sum-divider"></div>
+                  <div class="sum-row"><span>Loja</span><strong id="sumStore">—</strong></div>
+                  <div class="sum-row"><span>Vendedor</span><strong id="sumSeller">—</strong></div>
+                  <div class="sum-row"><span>Pagamento</span><strong id="sumPayment">—</strong></div>
+                </div>
+              </div>
+
+              <!-- Histórico de vendas -->
               <div class="card">
-                <div class="sectionHead"><h2>Histórico de vendas</h2><button id="exportVendasBtn" class="btn btnGhost btnSmall"><i class="fa fa-download"></i> CSV</button></div>
+                <div class="sectionHead">
+                  <h2>Histórico de vendas</h2>
+                  <button id="exportVendasBtn" class="btn btnSmall" style="border-color:var(--line)"><i class="fa fa-download"></i> CSV</button>
+                </div>
                 <div class="filter-row">
                   <input type="date" id="vendaDataInicio" />
                   <input type="date" id="vendaDataFim" />
                   <button id="filtrarVendasBtn" class="btn btnPrimary btnSmall">Filtrar</button>
                 </div>
-                <div class="table-wrap">
+                <div class="table-wrap" style="max-height:300px">
                   <table id="vendasTable">
                     <thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Vendedor</th><th>Cliente</th><th>Pagamento</th><th>Valor</th></tr></thead>
                     <tbody></tbody>
@@ -175,242 +241,377 @@
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <!-- CAIXA -->
-          <section class="tab-panel" id="caixa">
-            <div class="grid2 even">
-              <div class="card"><div class="sectionHead"><h2>Abertura de caixa</h2></div><form id="cashOpenForm" class="form-grid"><label>Loja<select name="store_id" id="cashOpenStore"></select></label><label>Valor de abertura<input type="number" step="0.01" name="opening_amount" value="0" /></label><button type="submit" class="btn btnPrimary">Abrir caixa</button></form></div>
-              <div class="card"><div class="sectionHead"><h2>Fechamento de caixa</h2></div><form id="cashCloseForm" class="form-grid"><label>Loja<select name="store_id" id="cashCloseStore"></select></label><label>Valor de fechamento<input type="number" step="0.01" name="closing_amount" value="0" /></label><button type="submit" class="btn btnPrimary">Fechar caixa</button></form></div>
+        <!-- ═══ CAIXA ═══ -->
+        <section class="tab-panel" id="caixa">
+          <div class="grid2 even" style="margin-bottom:14px">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-lock-open"></i> Abertura de caixa</h2></div>
+              <form id="cashOpenForm" class="form-grid">
+                <label class="full">Loja<select name="store_id" id="cashOpenStore"></select></label>
+                <label class="full">Valor de abertura (R$)<input type="number" step="0.01" name="opening_amount" value="0" /></label>
+                <button type="submit" class="btn btnPrimary full">Abrir caixa</button>
+              </form>
             </div>
-            <div class="card"><div class="sectionHead"><h2>Histórico de caixas</h2></div><div class="table-wrap"><table id="cashTable"><thead><tr><th>Loja</th><th>Aberto por</th><th>Abertura</th><th>Valor abertura</th><th>Fechado por</th><th>Fechamento</th><th>Valor fech.</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
-          </section>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-lock"></i> Fechamento de caixa</h2></div>
+              <form id="cashCloseForm" class="form-grid">
+                <label class="full">Loja<select name="store_id" id="cashCloseStore"></select></label>
+                <label class="full">Valor de fechamento (R$)<input type="number" step="0.01" name="closing_amount" value="0" /></label>
+                <button type="submit" class="btn btnPrimary full">Fechar caixa</button>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="sectionHead"><h2>Histórico de caixas</h2></div>
+            <div class="table-wrap">
+              <table id="cashTable">
+                <thead><tr><th>Loja</th><th>Aberto por</th><th>Abertura</th><th>Vl. abertura</th><th>Fechado por</th><th>Fechamento</th><th>Vl. fecham.</th><th>Status</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-          <!-- ENTRADA -->
-          <section class="tab-panel" id="entrada">
-            <div class="grid2 even">
-              <div class="card">
-                <div class="sectionHead"><h2>Importar XML da nota</h2><span class="mutedTag">NFe XML</span></div>
-                <form id="xmlParseForm" class="form-grid">
-                  <label class="full">Cole aqui o XML da NFe<textarea id="xmlInput" name="xml" rows="10" placeholder="Cole o conteúdo completo do XML aqui"></textarea></label>
-                  <button type="submit" class="btn btnPrimary">Ler XML</button>
-                </form>
-                <div id="xmlPreview" class="xmlPreview hidden">
-                  <div class="xmlHead">
-                    <div><strong>Fornecedor:</strong> <span id="xmlSupplier">-</span></div>
-                    <div><strong>Nota:</strong> <span id="xmlNoteNumber">-</span></div>
-                    <div><strong>Emissão:</strong> <span id="xmlIssueDate">-</span></div>
-                  </div>
-                  <div class="table-wrap small"><table id="xmlItemsTable"><thead><tr><th>Código</th><th>Barcode</th><th>Produto</th><th>Qtd</th><th>Unitário</th><th>Total</th></tr></thead><tbody></tbody></table></div>
-                  <div class="xmlActions"><button type="button" id="applyXmlToEntry" class="btn btnPrimary">Aplicar no formulário</button></div>
+        <!-- ═══ ENTRADA ═══ -->
+        <section class="tab-panel" id="entrada">
+          <div class="grid2 even">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-file-code"></i> Importar XML da nota</h2><span class="mutedTag">NFe / NFCe</span></div>
+              <form id="xmlParseForm" class="form-grid">
+                <label class="full">Cole aqui o XML da NFe
+                  <textarea id="xmlInput" name="xml" rows="10" placeholder="Cole o conteúdo completo do arquivo XML aqui..."></textarea>
+                </label>
+                <button type="submit" class="btn btnPrimary">Ler XML</button>
+              </form>
+              <div id="xmlPreview" class="xmlPreview hidden">
+                <div class="xmlHead">
+                  <div><strong>Fornecedor:</strong> <span id="xmlSupplier">-</span></div>
+                  <div><strong>Nota:</strong> <span id="xmlNoteNumber">-</span></div>
+                  <div><strong>Emissão:</strong> <span id="xmlIssueDate">-</span></div>
                 </div>
+                <div class="table-wrap small">
+                  <table id="xmlItemsTable"><thead><tr><th>Código</th><th>Barcode</th><th>Produto</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead><tbody></tbody></table>
+                </div>
+                <div class="xmlActions"><button type="button" id="applyXmlToEntry" class="btn btnPrimary">Aplicar no formulário</button></div>
               </div>
-              <div class="card"><div class="sectionHead"><h2>Entrada de nota com IMEIs</h2></div><form id="entryForm" class="form-grid">
+            </div>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-file-import"></i> Entrada com IMEIs</h2></div>
+              <form id="entryForm" class="form-grid">
                 <label>Loja<select name="store_id" id="entryStore"></select></label>
-                <label>Fornecedor<input type="text" name="supplier_name" placeholder="Fornecedor" /></label>
-                <label>Número da nota<input type="text" name="note_number" placeholder="NF 123" /></label>
-                <label>Produto<select name="product_id" id="entryProduct"></select></label>
-                <label>Código de barras<input type="text" id="entryBarcode" placeholder="Bipar código de barras" /></label>
-                <div></div>
-                <label class="full">IMEIs (1 por linha)<textarea name="imeis" rows="8"></textarea></label>
-                <label class="full">Observações<input type="text" name="notes" placeholder="Lote, cor, etc." /></label>
+                <label>Fornecedor<input type="text" name="supplier_name" placeholder="Nome do fornecedor" /></label>
+                <label>Nº da nota<input type="text" name="note_number" placeholder="NF 12345" /></label>
+                <label>Produto<select name="product_id" id="entryProduct"><option value="">Selecione</option></select></label>
+                <label class="full">Código de barras<input type="text" id="entryBarcode" placeholder="Bipar ou digitar código..." /></label>
+                <label class="full">IMEIs (um por linha)
+                  <textarea name="imeis" rows="8" placeholder="354512000000001&#10;354512000000002&#10;354512000000003"></textarea>
+                </label>
+                <label class="full">Observações<input type="text" name="notes" placeholder="Lote, cor, capacidade..." /></label>
                 <button type="submit" class="btn btnPrimary">Registrar entrada</button>
-              </form></div>
+              </form>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <!-- CLIENTES -->
-          <section class="tab-panel" id="clientes">
-            <div class="grid2 even">
-              <div class="card">
-                <div class="sectionHead"><h2>Cadastro de clientes</h2><span class="mutedTag">App + Dashboard</span></div>
-                <form id="customerForm" class="form-grid">
-                  <label>Nome<input type="text" name="name" /></label>
-                  <label>CPF<input type="text" name="cpf" /></label>
-                  <label>Telefone<input type="text" name="phone" /></label>
-                  <label>Loja<select name="store_id" id="customerStore"></select></label>
-                  <button type="submit" class="btn btnPrimary">Cadastrar cliente</button>
-                </form>
+        <!-- ═══ CLIENTES ═══ -->
+        <section class="tab-panel" id="clientes">
+          <div class="grid2 even">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-user-plus"></i> Cadastro de clientes</h2><span class="mutedTag">App + Dashboard</span></div>
+              <form id="customerForm" class="form-grid">
+                <label>Nome completo<input type="text" name="name" placeholder="Nome do cliente" /></label>
+                <label>CPF<input type="text" name="cpf" placeholder="000.000.000-00" /></label>
+                <label>Telefone / WhatsApp<input type="text" name="phone" placeholder="(81) 9 0000-0000" /></label>
+                <label>Loja<select name="store_id" id="customerStore"></select></label>
+                <button type="submit" class="btn btnPrimary">Cadastrar cliente</button>
+              </form>
+            </div>
+            <div class="card">
+              <div class="sectionHead">
+                <h2>Clientes cadastrados</h2>
+                <button id="exportClientesBtn" class="btn btnSmall" style="border-color:var(--line)"><i class="fa fa-download"></i> CSV</button>
               </div>
-              <div class="card">
-                <div class="sectionHead"><h2>Clientes cadastrados</h2><button id="exportClientesBtn" class="btn btnGhost btnSmall"><i class="fa fa-download"></i> CSV</button></div>
-                <div class="filter-row"><input type="text" id="clienteSearch" placeholder="Buscar nome, CPF ou telefone..." /></div>
-                <div class="table-wrap small"><table id="customersTable"><thead><tr><th>Data</th><th>Loja</th><th>Nome</th><th>CPF</th><th>Telefone</th><th>Origem</th></tr></thead><tbody></tbody></table></div>
+              <div class="filter-row"><input type="text" id="clienteSearch" placeholder="Buscar nome, CPF ou telefone..." style="flex:1" /></div>
+              <div class="table-wrap small">
+                <table id="customersTable"><thead><tr><th>Data</th><th>Loja</th><th>Nome</th><th>CPF</th><th>Telefone</th><th>Origem</th></tr></thead><tbody></tbody></table>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <!-- ASSISTÊNCIA -->
-          <section class="tab-panel" id="assistencia">
-            <div class="grid2 even">
-              <div class="card"><div class="sectionHead"><h2>Saída para assistência ou reembalo</h2></div><form id="serviceOutForm" class="form-grid">
+        <!-- ═══ ASSISTÊNCIA ═══ -->
+        <section class="tab-panel" id="assistencia">
+          <div class="grid2 even" style="margin-bottom:14px">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-screwdriver-wrench"></i> Saída para assistência</h2></div>
+              <form id="serviceOutForm" class="form-grid">
                 <label>Loja<select name="store_id" id="serviceStore"></select></label>
-                <label>Produto<select name="product_id" id="serviceProduct"></select></label>
-                <label>IMEI<select name="imei" id="serviceImei"></select></label>
-                <label>Destino<input type="text" name="destination_name" placeholder="Assistência X" /></label>
-                <label>Tipo<select name="move_type"><option value="ASSISTANCE">Assistência</option><option value="REPACK">Reembalo</option></select></label>
-                <label class="full">Observações<input type="text" name="notes" /></label>
+                <label>Produto<select name="product_id" id="serviceProduct"><option value="">Selecione</option></select></label>
+                <label class="full">IMEI<select name="imei" id="serviceImei"><option value="">Selecione loja e produto</option></select></label>
+                <label>Destino<input type="text" name="destination_name" placeholder="Assistência XYZ" /></label>
+                <label>Tipo<select name="move_type"><option value="ASSISTANCE">Assistência técnica</option><option value="REPACK">Reembalo</option></select></label>
+                <label class="full">Observações<input type="text" name="notes" placeholder="Defeito, problema relatado..." /></label>
                 <button type="submit" class="btn btnPrimary">Registrar saída</button>
-              </form></div>
-              <div class="card"><div class="sectionHead"><h2>Retorno ao estoque</h2></div><form id="serviceReturnForm" class="form-grid">
-                <label>IMEI<input type="text" name="imei" placeholder="IMEI" /></label>
-                <label class="full">Observações<input type="text" name="notes" /></label>
-                <button type="submit" class="btn btnPrimary">Devolver ao estoque</button>
-              </form></div>
+              </form>
             </div>
-            <div class="card"><div class="sectionHead"><h2>Histórico assistência / reembalo</h2></div><div class="table-wrap"><table id="serviceTable"><thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Tipo</th><th>Status</th><th>Destino</th><th>Obs</th></tr></thead><tbody></tbody></table></div></div>
-          </section>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-rotate-left"></i> Retorno ao estoque</h2></div>
+              <form id="serviceReturnForm" class="form-grid">
+                <label class="full">IMEI<input type="text" name="imei" placeholder="IMEI do aparelho que voltou" /></label>
+                <label class="full">Observações<input type="text" name="notes" placeholder="Conserto realizado, observações..." /></label>
+                <button type="submit" class="btn btnPrimary">Devolver ao estoque</button>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="sectionHead"><h2>Histórico — assistência e reembalo</h2></div>
+            <div class="table-wrap">
+              <table id="serviceTable"><thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Tipo</th><th>Status</th><th>Destino</th><th>Obs</th></tr></thead><tbody></tbody></table>
+            </div>
+          </div>
+        </section>
 
-          <!-- TRANSFERÊNCIA -->
-          <section class="tab-panel" id="transferencia">
-            <div class="card"><div class="sectionHead"><h2>Transferência entre lojas</h2></div><form id="transferForm" class="form-grid">
+        <!-- ═══ TRANSFERÊNCIA ═══ -->
+        <section class="tab-panel" id="transferencia">
+          <div class="card" style="margin-bottom:14px">
+            <div class="sectionHead"><h2><i class="fa fa-right-left"></i> Transferência entre lojas</h2></div>
+            <form id="transferForm" class="form-grid">
               <label>Loja origem<select name="from_store_id" id="transferFromStore"></select></label>
               <label>Loja destino<select name="to_store_id" id="transferToStore"></select></label>
-              <label>Produto<select name="product_id" id="transferProduct"></select></label>
-              <label>IMEI<select name="imei" id="transferImei"></select></label>
-              <label class="full">Observações<input type="text" name="notes" placeholder="Reposição de quiosque" /></label>
+              <label>Produto<select name="product_id" id="transferProduct"><option value="">Selecione</option></select></label>
+              <label>IMEI<select name="imei" id="transferImei"><option value="">Selecione loja e produto</option></select></label>
+              <label class="full">Observações<input type="text" name="notes" placeholder="Reposição de estoque, motivo..." /></label>
               <button type="submit" class="btn btnPrimary">Transferir aparelho</button>
-            </form></div>
-            <div class="card"><div class="sectionHead"><h2>Histórico de transferências</h2></div><div class="table-wrap"><table id="transferTable"><thead><tr><th>Data</th><th>Origem</th><th>Destino</th><th>Produto</th><th>IMEI</th><th>Solicitado por</th><th>Obs</th></tr></thead><tbody></tbody></table></div></div>
-          </section>
-
-          <!-- ESTOQUE -->
-          <section class="tab-panel" id="estoque">
-            <div class="card filters">
-              <div class="sectionHead"><h2>Consulta de IMEIs</h2><button id="exportEstoqueBtn" class="btn btnGhost btnSmall"><i class="fa fa-download"></i> CSV</button></div>
-              <div class="filter-row">
-                <select id="imeiFilterStore"></select>
-                <select id="imeiFilterProduct"></select>
-                <select id="imeiFilterStatus"><option value="">Todos os status</option><option value="AVAILABLE">Disponível</option><option value="ASSISTANCE">Assistência</option><option value="REPACK">Reembalo</option><option value="SOLD">Vendido</option></select>
-                <input type="text" id="imeiFilterBarcode" placeholder="Código de barras" />
-                <button id="reloadImeis" class="btn btnPrimary">Atualizar</button>
-              </div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="sectionHead"><h2>Histórico de transferências</h2></div>
+            <div class="table-wrap">
+              <table id="transferTable"><thead><tr><th>Data</th><th>Origem</th><th>Destino</th><th>Produto</th><th>IMEI</th><th>Solicitado por</th><th>Obs</th></tr></thead><tbody></tbody></table>
             </div>
-            <div class="card"><div class="table-wrap"><table id="imeiTable"><thead><tr><th>Loja</th><th>Produto</th><th>IMEI</th><th>Status</th><th>Documento</th><th>Obs</th><th>Atualizado</th></tr></thead><tbody></tbody></table></div></div>
-          </section>
+          </div>
+        </section>
 
-          <!-- FINANCEIRO -->
-          <section class="tab-panel" id="financeiro">
-            <div class="grid4" id="financeCards"></div>
-            <div class="grid2 even">
-              <div class="card"><div class="sectionHead"><h2>Lançar despesa</h2></div><form id="expenseForm" class="form-grid">
+        <!-- ═══ ESTOQUE ═══ -->
+        <section class="tab-panel" id="estoque">
+          <div class="card" style="margin-bottom:14px">
+            <div class="sectionHead">
+              <h2><i class="fa fa-boxes-stacked"></i> Consulta de IMEIs</h2>
+              <button id="exportEstoqueBtn" class="btn btnSmall" style="border-color:var(--line)"><i class="fa fa-download"></i> CSV</button>
+            </div>
+            <div class="filter-row">
+              <select id="imeiFilterStore" style="flex:1"></select>
+              <select id="imeiFilterProduct" style="flex:1"></select>
+              <select id="imeiFilterStatus" style="flex:0 0 160px">
+                <option value="">Todos os status</option>
+                <option value="AVAILABLE">Disponível</option>
+                <option value="ASSISTANCE">Assistência</option>
+                <option value="REPACK">Reembalo</option>
+                <option value="SOLD">Vendido</option>
+              </select>
+              <input type="text" id="imeiFilterBarcode" placeholder="Código de barras" style="flex:0 0 180px"/>
+              <button id="reloadImeis" class="btn btnPrimary">Atualizar</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap" style="max-height:520px">
+              <table id="imeiTable">
+                <thead><tr><th>Loja</th><th>Produto</th><th>IMEI</th><th>Status</th><th>Documento</th><th>Observação</th><th>Atualizado</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ FINANCEIRO ═══ -->
+        <section class="tab-panel" id="financeiro">
+          <div class="grid4" id="financeCards" style="margin-bottom:14px"></div>
+          <div class="grid2 even" style="margin-bottom:14px">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-arrow-trend-down" style="color:#dc2626"></i> Lançar despesa</h2></div>
+              <form id="expenseForm" class="form-grid">
                 <label>Loja<select name="store_id" id="expenseStore"></select></label>
-                <label>Categoria<input type="text" name="category" placeholder="Categoria" /></label>
-                <label class="full">Descrição<input type="text" name="description" placeholder="Descrição" /></label>
-                <label>Valor<input type="number" step="0.01" name="amount" /></label>
+                <label>Categoria<input type="text" name="category" placeholder="Aluguel, energia, salário..." /></label>
+                <label class="full">Descrição<input type="text" name="description" placeholder="Descrição da despesa" /></label>
+                <label>Valor (R$)<input type="number" step="0.01" name="amount" min="0" /></label>
                 <label>Vencimento<input type="date" name="due_date" /></label>
                 <label>Status<select name="status"><option value="OPEN">Em aberto</option><option value="PAID">Pago</option></select></label>
                 <button type="submit" class="btn btnPrimary">Registrar despesa</button>
-              </form></div>
-              <div class="card"><div class="sectionHead"><h2>Lançar receita manual</h2></div><form id="incomeForm" class="form-grid">
+              </form>
+            </div>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-arrow-trend-up" style="color:#16a34a"></i> Lançar receita manual</h2></div>
+              <form id="incomeForm" class="form-grid">
                 <label>Loja<select name="store_id" id="incomeStore"></select></label>
-                <label>Categoria<input type="text" name="category" placeholder="Categoria" /></label>
-                <label class="full">Descrição<input type="text" name="description" placeholder="Descrição" /></label>
-                <label>Valor<input type="number" step="0.01" name="amount" /></label>
+                <label>Categoria<input type="text" name="category" placeholder="Serviço, comissão, outros..." /></label>
+                <label class="full">Descrição<input type="text" name="description" placeholder="Descrição da receita" /></label>
+                <label>Valor (R$)<input type="number" step="0.01" name="amount" min="0" /></label>
                 <label>Vencimento<input type="date" name="due_date" /></label>
                 <label>Status<select name="status"><option value="OPEN">Em aberto</option><option value="PAID">Recebido</option></select></label>
                 <button type="submit" class="btn btnPrimary">Registrar receita</button>
-              </form></div>
+              </form>
             </div>
-            <div class="card"><div class="sectionHead"><h2>Lançamentos financeiros</h2><button id="exportFinanceBtn" class="btn btnGhost btnSmall"><i class="fa fa-download"></i> CSV</button></div><div class="table-wrap"><table id="financeTable"><thead><tr><th>Data</th><th>Loja</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr></thead><tbody></tbody></table></div></div>
-          </section>
+          </div>
+          <div class="card">
+            <div class="sectionHead">
+              <h2>Lançamentos financeiros</h2>
+              <button id="exportFinanceBtn" class="btn btnSmall" style="border-color:var(--line)"><i class="fa fa-download"></i> CSV</button>
+            </div>
+            <div class="table-wrap">
+              <table id="financeTable">
+                <thead><tr><th>Data</th><th>Loja</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-          <!-- RELATÓRIOS -->
-          <section class="tab-panel" id="relatorios">
+        <!-- ═══ RELATÓRIOS ═══ -->
+        <section class="tab-panel" id="relatorios">
+          <div class="card" style="margin-bottom:14px">
+            <div class="sectionHead">
+              <h2><i class="fa fa-chart-bar"></i> Relatório de Vendas por Período</h2>
+              <button id="exportRelVendasBtn" class="btn btnSmall" style="border-color:var(--line)"><i class="fa fa-download"></i> CSV</button>
+            </div>
+            <div class="filter-row">
+              <input type="date" id="relDataInicio" />
+              <input type="date" id="relDataFim" />
+              <select id="relLoja"><option value="">Todas as lojas</option></select>
+              <button id="gerarRelVendas" class="btn btnPrimary">Gerar relatório</button>
+            </div>
+            <div class="grid4" id="relVendasCards" style="margin-bottom:14px"></div>
+            <div class="table-wrap">
+              <table id="relVendasTable">
+                <thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Vendedor</th><th>Cliente</th><th>Pagamento</th><th>Valor</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="grid2">
             <div class="card">
-              <div class="sectionHead"><h2><i class="fa fa-chart-bar"></i> Relatório de Vendas por Período</h2><button id="exportRelVendasBtn" class="btn btnGhost btnSmall"><i class="fa fa-download"></i> CSV</button></div>
+              <div class="sectionHead"><h2><i class="fa fa-file-invoice-dollar"></i> DRE — Demonstrativo de Resultado</h2></div>
               <div class="filter-row">
-                <input type="date" id="relDataInicio" />
-                <input type="date" id="relDataFim" />
-                <select id="relLoja"><option value="">Todas as lojas</option></select>
-                <button id="gerarRelVendas" class="btn btnPrimary">Gerar relatório</button>
+                <select id="dreMes">
+                  <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+                  <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+                  <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+                  <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                </select>
+                <select id="dreAno"></select>
+                <button id="gerarDRE" class="btn btnPrimary">Calcular</button>
               </div>
-              <div class="grid4" id="relVendasCards"></div>
-              <div class="table-wrap"><table id="relVendasTable"><thead><tr><th>Data</th><th>Loja</th><th>Produto</th><th>IMEI</th><th>Vendedor</th><th>Cliente</th><th>Pagamento</th><th>Valor</th></tr></thead><tbody></tbody></table></div>
+              <div id="dreResult" class="dre-box"></div>
             </div>
-            <div class="grid2">
-              <div class="card">
-                <div class="sectionHead"><h2><i class="fa fa-file-invoice-dollar"></i> DRE — Demonstrativo de Resultado</h2></div>
-                <div class="filter-row">
-                  <select id="dreMes"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select>
-                  <select id="dreAno"></select>
-                  <button id="gerarDRE" class="btn btnPrimary">Calcular</button>
-                </div>
-                <div id="dreResult" class="dre-box"></div>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-money-bill-trend-up"></i> Fluxo de Caixa Mensal</h2></div>
+              <div class="filter-row">
+                <select id="fluxoMes">
+                  <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+                  <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+                  <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+                  <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                </select>
+                <select id="fluxoAno"></select>
+                <button id="gerarFluxo" class="btn btnPrimary">Calcular</button>
               </div>
-              <div class="card">
-                <div class="sectionHead"><h2><i class="fa fa-money-bill-trend-up"></i> Fluxo de Caixa Mensal</h2></div>
-                <div class="filter-row">
-                  <select id="fluxoMes"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select>
-                  <select id="fluxoAno"></select>
-                  <button id="gerarFluxo" class="btn btnPrimary">Calcular</button>
-                </div>
-                <canvas id="chartFluxo" height="130"></canvas>
-                <div id="fluxoResult" class="dre-box" style="margin-top:12px"></div>
-              </div>
+              <canvas id="chartFluxo" height="130"></canvas>
+              <div id="fluxoResult" class="dre-box" style="margin-top:12px"></div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <!-- FUNCIONÁRIOS -->
-          <section class="tab-panel" id="funcionarios">
-            <div class="grid2 even">
-              <div class="card">
-                <div class="sectionHead"><h2>Cadastro de funcionários</h2><span class="mutedTag">Por loja</span></div>
-                <form id="employeeForm" class="form-grid">
-                  <label>Nome<input type="text" name="name" /></label>
-                  <label>Cargo<input type="text" name="role_name" value="Vendedor" /></label>
-                  <label>Loja<select name="store_id" id="employeeStore"></select></label>
-                  <button type="submit" class="btn btnPrimary">Cadastrar funcionário</button>
-                </form>
-              </div>
-              <div class="card">
-                <div class="sectionHead"><h2>Funcionários cadastrados</h2><span class="mutedTag">Filtro multi-loja</span></div>
-                <div class="table-wrap small"><table id="employeesTable"><thead><tr><th>Loja</th><th>Nome</th><th>Cargo</th><th>Status</th><th>Cadastro</th></tr></thead><tbody></tbody></table></div>
+        <!-- ═══ FUNCIONÁRIOS ═══ -->
+        <section class="tab-panel" id="funcionarios">
+          <div class="grid2 even">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-user-plus"></i> Cadastro de funcionários</h2><span class="mutedTag">Por loja</span></div>
+              <form id="employeeForm" class="form-grid">
+                <label>Nome completo<input type="text" name="name" placeholder="Nome do funcionário" /></label>
+                <label>Cargo<input type="text" name="role_name" value="Vendedor" placeholder="Vendedor, gerente..." /></label>
+                <label class="full">Loja<select name="store_id" id="employeeStore"></select></label>
+                <button type="submit" class="btn btnPrimary">Cadastrar funcionário</button>
+              </form>
+            </div>
+            <div class="card">
+              <div class="sectionHead"><h2>Funcionários cadastrados</h2><span class="mutedTag">Filtro multi-loja</span></div>
+              <div class="table-wrap">
+                <table id="employeesTable"><thead><tr><th>Loja</th><th>Nome</th><th>Cargo</th><th>Status</th><th>Cadastro</th></tr></thead><tbody></tbody></table>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <!-- NOTAS -->
-          <section class="tab-panel" id="notas">
-            <div class="grid2 even">
-              <div class="card"><div class="sectionHead"><h2>Notas de entrada</h2></div><div class="table-wrap small"><table id="notesEntryTable"><thead><tr><th>Data</th><th>Loja</th><th>Nota</th><th>Produto</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table></div></div>
-              <div class="card"><div class="sectionHead"><h2>Notas de saída</h2></div><div class="table-wrap small"><table id="notesExitTable"><thead><tr><th>Data</th><th>Loja</th><th>Nota</th><th>Produto</th><th>Qtd</th><th>Motivo</th></tr></thead><tbody></tbody></table></div></div>
+        <!-- ═══ NOTAS ═══ -->
+        <section class="tab-panel" id="notas">
+          <div class="grid2 even">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-file-arrow-down"></i> Notas de entrada</h2></div>
+              <div class="table-wrap">
+                <table id="notesEntryTable"><thead><tr><th>Data</th><th>Loja</th><th>Nota</th><th>Produto</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
+              </div>
             </div>
-          </section>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-file-arrow-up"></i> Notas de saída</h2></div>
+              <div class="table-wrap">
+                <table id="notesExitTable"><thead><tr><th>Data</th><th>Loja</th><th>Nota</th><th>Produto</th><th>Qtd</th><th>Motivo</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
 
-          <!-- CADASTROS (ADMIN) -->
-          <section class="tab-panel admin-only" id="cadastros">
-            <div class="grid2 even">
-              <div class="card"><div class="sectionHead"><h2>Novo usuário</h2></div><form id="userForm" class="form-grid">
-                <label>Nome<input type="text" name="name" /></label>
-                <label>Usuário<input type="text" name="username" /></label>
-                <label>Senha<input type="password" name="password" /></label>
+        <!-- ═══ CADASTROS (ADMIN) ═══ -->
+        <section class="tab-panel admin-only" id="cadastros">
+          <div class="grid2 even" style="margin-bottom:14px">
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-user-gear"></i> Novo usuário</h2></div>
+              <form id="userForm" class="form-grid">
+                <label>Nome<input type="text" name="name" placeholder="Nome completo" /></label>
+                <label>Usuário<input type="text" name="username" placeholder="login" /></label>
+                <label>Senha<input type="password" name="password" placeholder="••••••" /></label>
                 <label>Perfil<select name="role"><option value="ADMIN">ADMIN</option><option value="USER">USER</option></select></label>
                 <button type="submit" class="btn btnPrimary">Criar usuário</button>
-              </form></div>
-              <div class="card"><div class="sectionHead"><h2>Novo vendedor</h2></div><form id="sellerForm" class="form-grid">
-                <label>Loja<select name="store_id" id="sellerStore"></select></label>
-                <label>Nome<input type="text" name="name" /></label>
+              </form>
+            </div>
+            <div class="card">
+              <div class="sectionHead"><h2><i class="fa fa-id-badge"></i> Novo vendedor</h2></div>
+              <form id="sellerForm" class="form-grid">
+                <label class="full">Loja<select name="store_id" id="sellerStore"></select></label>
+                <label class="full">Nome<input type="text" name="name" placeholder="Nome do vendedor" /></label>
                 <button type="submit" class="btn btnPrimary">Criar vendedor</button>
-              </form></div>
+              </form>
             </div>
-            <div class="grid2 even">
-              <div class="card"><div class="sectionHead"><h2>Usuários</h2></div><div class="table-wrap small"><table id="usersTable"><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Ativo</th></tr></thead><tbody></tbody></table></div></div>
-              <div class="card"><div class="sectionHead"><h2>Vendedores</h2></div><div class="table-wrap small"><table id="sellerTable"><thead><tr><th>Loja</th><th>Nome</th><th>Ativo</th></tr></thead><tbody></tbody></table></div></div>
+          </div>
+          <div class="grid2 even">
+            <div class="card">
+              <div class="sectionHead"><h2>Usuários</h2></div>
+              <div class="table-wrap">
+                <table id="usersTable"><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Ativo</th></tr></thead><tbody></tbody></table>
+              </div>
             </div>
-          </section>
+            <div class="card">
+              <div class="sectionHead"><h2>Vendedores</h2></div>
+              <div class="table-wrap">
+                <table id="sellerTable"><thead><tr><th>Loja</th><th>Nome</th><th>Ativo</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        </div>
-      </main>
-    </div>
+      </div><!-- /container -->
+    </main>
+  </div><!-- /app -->
 
-    <footer class="appFooter">
-      <div>JRS PDV ERP V5</div>
-      <div>Sistema comercial operacional · REALME</div>
-    </footer>
-    <aside id="toast"></aside>
-  </div>
+  <footer class="appFooter">
+    <div>JRS PDV ERP V9 · REALME Multi-Loja</div>
+    <div>Sistema comercial operacional · 11 lojas cadastradas</div>
+  </footer>
+  <aside id="toast"></aside>
+</div>
 
-  <script src="js/app.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

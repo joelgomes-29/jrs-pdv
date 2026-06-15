@@ -160,19 +160,18 @@ function renderCards(c) {
   const qtdVendas = (state.allSales || []).length;
   const ticketMedio = qtdVendas ? totalVendas / qtdVendas : 0;
   const items = [
-    { label: 'Estoque disponível',    value: String(c.available_units || 0),  icon: 'fa-boxes-stacked',   color: 'blue' },
-    { label: 'Total de vendas (R$)',  value: money(totalVendas),               icon: 'fa-sack-dollar',     color: 'green' },
-    { label: 'Ticket médio',          value: money(ticketMedio),               icon: 'fa-chart-line',      color: 'purple' },
-    { label: 'Em assistência',        value: String(c.assistance_units || 0),  icon: 'fa-screwdriver-wrench', color: 'orange' },
+    { label: 'Estoque disponível',   value: String(c.available_units || 0),     icon: 'fa-boxes-stacked',      color: 'blue',   sub: 'unidades disponíveis' },
+    { label: 'Total de vendas',      value: money(totalVendas),                  icon: 'fa-sack-dollar',        color: 'green',  sub: `${qtdVendas} vendas realizadas` },
+    { label: 'Ticket médio',         value: money(ticketMedio),                  icon: 'fa-chart-line',         color: 'purple', sub: 'valor médio por venda' },
+    { label: 'Em assistência',       value: String(c.assistance_units || 0),     icon: 'fa-screwdriver-wrench', color: 'orange', sub: 'aguardando retorno' },
   ];
   document.getElementById('cards').innerHTML = items.map(item => `
     <div class="card kpi kpi-${item.color}">
-      <div class="left">
-        <div class="icon"><i class="fa-solid ${item.icon}"></i></div>
-        <div>
-          <div class="label">${item.label}</div>
-          <div class="value">${item.value}</div>
-        </div>
+      <div class="icon"><i class="fa-solid ${item.icon}"></i></div>
+      <div class="kpi-info">
+        <div class="label">${item.label}</div>
+        <div class="value">${item.value}</div>
+        <div class="sub">${item.sub}</div>
       </div>
     </div>`).join('');
 }
@@ -180,13 +179,17 @@ function renderCards(c) {
 function renderFinanceCards(summary) {
   if (!summary) return;
   const items = [
-    { label: 'Total Receitas',  value: money(summary.total_income),   color: 'green' },
-    { label: 'Total Despesas',  value: money(summary.total_expense),  color: 'red' },
-    { label: 'Resultado',       value: money(summary.result),         color: summary.result >= 0 ? 'green' : 'red' },
-    { label: 'Caixas Abertos',  value: String(summary.open_cash || 0), color: 'blue' },
+    { label: 'Total Receitas', value: money(summary.total_income),  color: 'green',  icon: 'fa-arrow-trend-up' },
+    { label: 'Total Despesas', value: money(summary.total_expense), color: 'red',    icon: 'fa-arrow-trend-down' },
+    { label: 'Resultado',      value: money(summary.result),        color: summary.result >= 0 ? 'green' : 'red', icon: 'fa-scale-balanced' },
+    { label: 'Caixas Abertos', value: String(summary.open_cash||0), color: 'blue',   icon: 'fa-vault' },
   ];
   const el = document.getElementById('financeCards');
-  if (el) el.innerHTML = items.map(i => `<div class="card kpi kpi-${i.color}"><div class="left"><div><div class="label">${i.label}</div><div class="value">${i.value}</div></div></div></div>`).join('');
+  if (el) el.innerHTML = items.map(i => `
+    <div class="card kpi kpi-${i.color}">
+      <div class="icon"><i class="fa-solid ${i.icon}"></i></div>
+      <div class="kpi-info"><div class="label">${i.label}</div><div class="value">${i.value}</div></div>
+    </div>`).join('');
 }
 
 function renderStockSummary(rows) {
@@ -327,6 +330,43 @@ function renderCharts() {
       options: { responsive: true, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => money(ctx.raw) } } } },
     });
   }
+}
+
+/* ─── PDV SUMMARY ────────────────────────────────────────── */
+function updatePdvSummary() {
+  const imeiEl    = document.getElementById('saleImei');
+  const priceEl   = document.getElementById('salePrice');
+  const storeEl   = document.getElementById('saleStore');
+  const sellerEl  = document.getElementById('saleSeller');
+  const payEl     = document.getElementById('salePayment');
+  const prodEl    = document.getElementById('saleProduct');
+
+  const imei     = imeiEl?.value;
+  const price    = Number(priceEl?.value || 0);
+  const storeOpt = storeEl?.options[storeEl?.selectedIndex];
+  const sellerOpt= sellerEl?.options[sellerEl?.selectedIndex];
+  const payOpt   = payEl?.options[payEl?.selectedIndex];
+  const prodOpt  = prodEl?.options[prodEl?.selectedIndex];
+
+  const empty = document.getElementById('pdvEmpty');
+  const info  = document.getElementById('pdvInfo');
+
+  if (!imei || !price) {
+    empty?.classList.remove('hidden');
+    info?.classList.add('hidden');
+    return;
+  }
+
+  empty?.classList.add('hidden');
+  info?.classList.remove('hidden');
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('sumProduct', prodOpt?.text || '—');
+  set('sumImei',    `IMEI: ${imei}`);
+  set('sumPrice',   money(price));
+  set('sumStore',   storeOpt?.text || '—');
+  set('sumSeller',  sellerOpt?.value || '—');
+  set('sumPayment', payOpt?.text || '—');
 }
 
 /* ─── RELATÓRIOS ──────────────────────────────────────────── */
@@ -652,9 +692,13 @@ function bind() {
   });
 
   // Vendas
-  document.getElementById('saleStore')?.addEventListener('change', async () => { await hydrateSellers(); await updateAvailableImeis('sale'); });
-  document.getElementById('saleProduct')?.addEventListener('change', async () => { updateSalePrice(); await updateAvailableImeis('sale'); });
+  document.getElementById('saleStore')?.addEventListener('change', async () => { await hydrateSellers(); await updateAvailableImeis('sale'); updatePdvSummary(); });
+  document.getElementById('saleProduct')?.addEventListener('change', async () => { updateSalePrice(); await updateAvailableImeis('sale'); updatePdvSummary(); });
   document.getElementById('saleBarcode')?.addEventListener('change', () => applyBarcode('sale', 'saleBarcode'));
+  document.getElementById('saleImei')?.addEventListener('change', updatePdvSummary);
+  document.getElementById('salePrice')?.addEventListener('input', updatePdvSummary);
+  document.getElementById('saleSeller')?.addEventListener('change', updatePdvSummary);
+  document.getElementById('salePayment')?.addEventListener('change', updatePdvSummary);
   document.getElementById('filtrarVendasBtn')?.addEventListener('click', () => {
     const inicio = document.getElementById('vendaDataInicio').value;
     const fim = document.getElementById('vendaDataFim').value;
@@ -720,7 +764,7 @@ function bind() {
   document.getElementById('cashOpenForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); try { await api.post('/api/cash/open', { store_id: Number(d.store_id), opening_amount: Number(d.opening_amount || 0) }); e.target.reset(); toast('Caixa aberto.'); } catch (err) { toast(err.message, false); } });
   document.getElementById('cashCloseForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); try { await api.post('/api/cash/close', { store_id: Number(d.store_id), closing_amount: Number(d.closing_amount || 0) }); e.target.reset(); toast('Caixa fechado.'); } catch (err) { toast(err.message, false); } });
   document.getElementById('entryForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); const imeis = (d.imeis || '').split('\n').map(x => x.trim()).filter(Boolean); try { await api.post('/api/note-entry', { store_id: Number(d.store_id), supplier_name: d.supplier_name, note_number: d.note_number, product_id: Number(d.product_id), imeis, notes: d.notes }); e.target.reset(); toast(`${imeis.length} IMEIs registrados.`); } catch (err) { toast(err.message, false); } });
-  document.getElementById('saleForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); try { await api.post('/api/sell', { store_id: Number(d.store_id), product_id: Number(d.product_id), imei: d.imei, seller_name: d.seller_name, customer_name: d.customer_name, payment_method: d.payment_method, sale_price: Number(d.sale_price) }); e.target.reset(); toast('Venda registrada!'); } catch (err) { toast(err.message, false); } });
+  document.getElementById('saleForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); try { await api.post('/api/sell', { store_id: Number(d.store_id), product_id: Number(d.product_id), imei: d.imei, seller_name: d.seller_name, customer_name: d.customer_name, payment_method: d.payment_method, sale_price: Number(d.sale_price) }); e.target.reset(); updatePdvSummary(); toast('✅ Venda registrada com sucesso!'); } catch (err) { toast(err.message, false); } });
   document.getElementById('serviceOutForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); try { await api.post('/api/service-move', { store_id: Number(d.store_id), product_id: Number(d.product_id), imei: d.imei, move_type: d.move_type, destination_name: d.destination_name, notes: d.notes }); e.target.reset(); toast('Saída registrada.'); } catch (err) { toast(err.message, false); } });
   document.getElementById('serviceReturnForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); try { await api.post('/api/service-return', d); e.target.reset(); toast('IMEI devolvido ao estoque.'); } catch (err) { toast(err.message, false); } });
   document.getElementById('transferForm')?.addEventListener('submit', async e => { e.preventDefault(); const d = formJson(e.target); try { await api.post('/api/transfer', { from_store_id: Number(d.from_store_id), to_store_id: Number(d.to_store_id), product_id: Number(d.product_id), imei: d.imei, notes: d.notes }); e.target.reset(); toast('Transferência realizada.'); } catch (err) { toast(err.message, false); } });

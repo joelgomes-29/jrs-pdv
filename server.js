@@ -1,431 +1,1055 @@
-require("dotenv").config();
-const pool = require("./db");
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
-const xml2js = require('xml2js');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'data', 'db.json');
-const sessions = new Map();
-sessions.set("meu-token-teste", {
-  id: 1,
-  nome: "Joel",
-  role: "ADMIN"
-});
-const sseClients = new Set();
+const JWT_SECRET = process.env.JWT_SECRET || 'JRS_CHAVE_SUPER_FORTE_2026s';
+const DB_PATH = path.join(__dirname, 'data', 'db.json');
 
-app.use(express.json({ limit: '5mb' }));
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-function loadDb(){ return JSON.parse(fs.readFileSync(DB_FILE,'utf8')); }
-function saveDb(db){ fs.writeFileSync(DB_FILE, JSON.stringify(db,null,2),'utf8'); }
-function nextId(arr){ return arr.length ? Math.max(...arr.map(x=>x.id||0))+1 : 1; }
-function now(){ return new Date().toISOString().slice(0,19).replace('T',' '); }
-function emitEvent(type,payload={}){
-  const data = `data: ${JSON.stringify({type,payload,ts:new Date().toISOString()})}\n\n`;
-  for(const res of sseClients){ try{ res.write(data); }catch(_){} }
-}
-function auth(req,res,next){
-  const token=(req.headers.authorization||'').replace('Bearer ','').trim();
-  if(!token || !sessions.has(token)) return res.status(401).json({error:'Não autenticado.'});
-  req.user=sessions.get(token); next();
-}
-function adminOnly(req,res,next){
-  if(req.user.role!=='ADMIN') return res.status(403).json({error:'Somente administrador.'});
-  next();
-}
-function cards(db){
-  const total_income = db.finance_entries.filter(x=>x.entry_type==='INCOME').reduce((a,b)=>a+Number(b.amount||0),0);
-  const total_expense = db.finance_entries.filter(x=>x.entry_type==='EXPENSE').reduce((a,b)=>a+Number(b.amount||0),0);
-  return {
-    available_units: db.imei_units.filter(x=>x.status==='AVAILABLE').length,
-    assistance_units: db.imei_units.filter(x=>x.status==='ASSISTANCE').length,
-    repack_units: db.imei_units.filter(x=>x.status==='REPACK').length,
-    sold_units: db.imei_units.filter(x=>x.status==='SOLD').length,
-    total_income, total_expense, result: total_income-total_expense,
-    open_cash: db.cash_registers.filter(x=>x.status==='OPEN').length
-  };
-}
-function stockSummary(db){
-  const rows=[];
-  db.stores.forEach(s=>{
-    db.products.forEach(p=>{
-      const units=db.imei_units.filter(x=>x.store_id===s.id && x.product_id===p.id);
-      rows.push({
-        store_name:s.name, product_name:p.name, price:p.price,
-        available_qty:units.filter(x=>x.status==='AVAILABLE').length,
-        assistance_qty:units.filter(x=>x.status==='ASSISTANCE').length,
-        repack_qty:units.filter(x=>x.status==='REPACK').length,
-        sold_qty:units.filter(x=>x.status==='SOLD').length
-      });
-    });
-  });
-  return rows.sort((a,b)=>(a.store_name+a.product_name).localeCompare(b.store_name+b.product_name));
-}
-function rankings(db){
-  const sm={}, pm={};
-  db.sales.forEach(s=>{
-    sm[s.seller_name] ||= {seller_name:s.seller_name,total_sales:0,total_value:0};
-    sm[s.seller_name].total_sales += 1; sm[s.seller_name].total_value += Number(s.sale_price||0);
-    const p = db.products.find(x=>x.id===s.product_id);
-    const key = p ? p.name : `Produto ${s.product_id}`;
-    pm[key] ||= {product_name:key,qty:0,total_value:0};
-    pm[key].qty += 1; pm[key].total_value += Number(s.sale_price||0);
-  });
-  return {
-    sellers:Object.values(sm).sort((a,b)=>b.total_value-a.total_value).slice(0,10),
-    products:Object.values(pm).sort((a,b)=>b.total_value-a.total_value).slice(0,10)
-  };
+const sseClients = [];
+
+function loadDb() {
+  return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
 }
 
-function pick(obj, path, fallback=null){
-  try{
-    return path.split('.').reduce((acc,k)=>acc && acc[k] !== undefined ? acc[k] : undefined, obj) ?? fallback;
-  }catch{ return fallback; }
-}
-function onlyDigits(v){ return String(v || '').replace(/\D/g,''); }
-async function parseNFeXmlText(xmlText){
-  const parsed = await xml2js.parseStringPromise(xmlText, { explicitArray:false, mergeAttrs:true, trim:true });
-  const nfe = parsed?.nfeProc?.NFe || parsed?.NFe || parsed?.procNFe?.NFe || parsed;
-  const inf = nfe?.infNFe || nfe?.NFe?.infNFe || nfe;
-  const ide = inf?.ide || {};
-  const emit = inf?.emit || {};
-  let det = inf?.det || [];
-  if (!Array.isArray(det)) det = [det];
-
-  const items = det.map(d => {
-    const prod = d?.prod || {};
-    return {
-      code: prod.cProd || '',
-      barcode: onlyDigits(prod.cEAN || prod.cEANTrib || ''),
-      name: prod.xProd || '',
-      ncm: prod.NCM || '',
-      cfop: prod.CFOP || '',
-      unit: prod.uCom || '',
-      quantity: Number(prod.qCom || 0),
-      unit_price: Number(prod.vUnCom || 0),
-      total: Number(prod.vProd || 0)
-    };
-  }).filter(x => x.name);
-
-  return {
-    supplier_name: emit?.xNome || '',
-    supplier_document: onlyDigits(emit?.CNPJ || emit?.CPF || ''),
-    note_number: ide?.nNF || '',
-    serie: ide?.serie || '',
-    issue_date: ide?.dhEmi || ide?.dEmi || '',
-    items
-  };
+function saveDb(db) {
+  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf8');
 }
 
-function mapEnriched(db){
-  const storeName=id=>(db.stores.find(x=>x.id===id)||{}).name || '';
-  const product=id=>db.products.find(x=>x.id===id)||{};
-  return {
-    sales: db.sales.map(x=>({...x,store_name:storeName(x.store_id),product_name:product(x.product_id).name||''})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))),
-    moves: db.stock_movements.map(x=>({...x,store_name:storeName(x.store_id),product_name:product(x.product_id).name||''})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))),
-    service_moves: db.service_moves.map(x=>({...x,store_name:storeName(x.store_id),product_name:product(x.product_id).name||''})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))),
-    transfers: db.transfers.map(x=>({...x,from_store_name:storeName(x.from_store_id),to_store_name:storeName(x.to_store_id),product_name:product(x.product_id).name||''})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))),
-    imeis: db.imei_units.map(x=>({...x,store_name:storeName(x.store_id),product_name:product(x.product_id).name||'',price:product(x.product_id).price||0,barcode:product(x.product_id).barcode||''})).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))),
-    notes:{
-      entries: db.note_entries.map(x=>({...x,store_name:storeName(x.store_id),product_name:product(x.product_id).name||''})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))),
-      exits: db.note_exits.map(x=>({...x,store_name:storeName(x.store_id),product_name:product(x.product_id).name||''})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))
-    },
-    cash: db.cash_registers.map(x=>({...x,store_name:storeName(x.store_id)})).sort((a,b)=>b.id-a.id),
-    finance: db.finance_entries.map(x=>({...x,store_name:storeName(x.store_id)})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))),
-    sellers: db.sellers.map(x=>({...x,store_name:storeName(x.store_id)})).sort((a,b)=>(a.store_name+a.name).localeCompare(b.store_name+b.name)),
-    customers: (db.customers||[]).map(x=>({...x,store_name:storeName(x.store_id)})).sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))),
-    employees: (db.employees||[]).map(x=>({...x,store_name:storeName(x.store_id)})).sort((a,b)=>(a.store_name+a.name).localeCompare(b.store_name+b.name))
-  };
+function nextId(arr) {
+  return arr.length ? Math.max(...arr.map(x => x.id || 0)) + 1 : 1;
 }
 
-app.get('/api/events', auth, (req,res)=>{
-  res.setHeader('Content-Type','text/event-stream');
-  res.setHeader('Cache-Control','no-cache');
-  res.setHeader('Connection','keep-alive');
-  res.write(`data: ${JSON.stringify({type:'connected'})}\n\n`);
-  sseClients.add(res);
-  req.on('close',()=>sseClients.delete(res));
-});
+function now() {
+  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+}
 
-app.post('/api/login',(req,res)=>{
-  const {username,password}=req.body||{};
-  const db=loadDb();
-  const user=db.users.find(u=>u.username===username && u.password===password && u.active===1);
-  if(!user) return res.status(401).json({error:'Usuário ou senha inválidos.'});
-  const token=crypto.randomBytes(24).toString('hex');
-  const safe={id:user.id,name:user.name,username:user.username,role:user.role};
-  sessions.set(token,safe);
-  res.json({token,user:safe});
-});
+function broadcast(event, data) {
+  const msg = `data: ${JSON.stringify({ event, data })}\n\n`;
+  sseClients.forEach(res => res.write(msg));
+}
 
-app.get('/api/bootstrap', auth, (req,res)=>{
-  const db=loadDb();
-  res.json({
-    stores:db.stores, products:db.products,
-    sellers: mapEnriched(db).sellers.filter(x=>x.active===1),
-    stockSummary:stockSummary(db), cards:cards(db), rankings:rankings(db), me:req.user, customers_count:(db.customers||[]).length, employees_count:(db.employees||[]).length
-  });
-});
-
-app.get('/api/users', auth, adminOnly, (req,res)=>{
-  const db=loadDb(); res.json(db.users.map(({password,...u})=>u));
-});
-app.post('/api/users', auth, adminOnly, (req,res)=>{
-  const {name,username,password,role}=req.body||{};
-  if(!name||!username||!password||!role) return res.status(400).json({error:'Preencha os campos do usuário.'});
-  const db=loadDb();
-  if(db.users.some(u=>u.username===username)) return res.status(400).json({error:'Usuário já existe.'});
-  db.users.push({id:nextId(db.users),name,username,password,role,active:1});
-  saveDb(db); emitEvent('users.updated'); res.json({ok:true});
-});
-
-app.get('/api/sellers', auth, (req,res)=>{
-  const db=loadDb(); let list=db.sellers.filter(x=>x.active===1);
-  if(req.query.store_id) list=list.filter(x=>String(x.store_id)===String(req.query.store_id));
-  res.json(list);
-});
-app.post('/api/sellers', auth, adminOnly, (req,res)=>{
-  const {store_id,name}=req.body||{};
-  if(!store_id||!name) return res.status(400).json({error:'Informe loja e nome do vendedor.'});
-  const db=loadDb(); db.sellers.push({id:nextId(db.sellers),store_id:Number(store_id),name,active:1});
-  saveDb(db); emitEvent('sellers.updated'); res.json({ok:true});
-});
-
-app.get('/api/imeis', auth, (req,res)=>{
-  const db=loadDb(); let list=mapEnriched(db).imeis;
-  const {store_id,product_id,status,barcode}=req.query;
-  if(store_id) list=list.filter(x=>String(x.store_id)===String(store_id));
-  if(product_id) list=list.filter(x=>String(x.product_id)===String(product_id));
-  if(status) list=list.filter(x=>x.status===status);
-  if(barcode) list=list.filter(x=>String(x.barcode)===String(barcode));
-  res.json(list);
-});
-
-app.post('/api/cash/open', auth, (req,res)=>{
-  const {store_id,opening_amount}=req.body||{};
-  if(!store_id) return res.status(400).json({error:'Informe a loja.'});
-  const db=loadDb();
-  if(db.cash_registers.some(c=>c.store_id===Number(store_id)&&c.status==='OPEN')) return res.status(400).json({error:'Já existe caixa aberto nessa loja.'});
-  db.cash_registers.push({id:nextId(db.cash_registers),store_id:Number(store_id),opened_by:req.user.name,opening_amount:Number(opening_amount||0),opened_at:now(),closed_by:null,closing_amount:null,closed_at:null,status:'OPEN'});
-  saveDb(db); emitEvent('cash.updated'); res.json({ok:true});
-});
-app.post('/api/cash/close', auth, (req,res)=>{
-  const {store_id,closing_amount}=req.body||{};
-  const db=loadDb(); const open=db.cash_registers.find(c=>c.store_id===Number(store_id)&&c.status==='OPEN');
-  if(!open) return res.status(400).json({error:'Não existe caixa aberto nessa loja.'});
-  open.status='CLOSED'; open.closed_by=req.user.name; open.closing_amount=Number(closing_amount||0); open.closed_at=now();
-  saveDb(db); emitEvent('cash.updated'); res.json({ok:true});
-});
-app.get('/api/cash', auth, (req,res)=>{ const db=loadDb(); res.json(mapEnriched(db).cash); });
-
-app.post('/api/note-entry', auth, (req,res)=>{
-  const {store_id,supplier_name,note_number,product_id,imeis,notes}=req.body||{};
-  if(!store_id||!product_id||!Array.isArray(imeis)||imeis.length===0) return res.status(400).json({error:'Informe loja, produto e IMEIs.'});
-  const db=loadDb(); const product=db.products.find(p=>p.id===Number(product_id));
-  if(!product) return res.status(404).json({error:'Produto não encontrado.'});
-  for(const raw of imeis){ const imei=String(raw).trim(); if(db.imei_units.some(x=>x.imei===imei)) return res.status(400).json({error:`IMEI duplicado: ${imei}`}); }
-  imeis.forEach(raw=>{
-    const imei=String(raw).trim(); if(!imei) return;
-    db.imei_units.push({id:nextId(db.imei_units),store_id:Number(store_id),product_id:Number(product_id),imei,status:'AVAILABLE',location_note:notes||null,last_document:note_number||null,created_at:now(),updated_at:now()});
-    db.stock_movements.push({id:nextId(db.stock_movements),store_id:Number(store_id),product_id:Number(product_id),imei,movement_type:'ENTRY_NOTE',quantity:1,document_number:note_number||null,seller_name:null,customer_name:null,notes:notes||null,created_at:now()});
-  });
-  db.note_entries.push({id:nextId(db.note_entries),store_id:Number(store_id),supplier_name:supplier_name||null,note_number:note_number||null,product_id:Number(product_id),quantity:imeis.length,total_value:imeis.length*Number(product.price),notes:notes||null,created_at:now()});
-  saveDb(db); emitEvent('stock.updated'); res.json({ok:true});
-});
-
-app.post('/api/sell', auth, (req,res)=>{
-  const {store_id,product_id,imei,seller_name,customer_name,payment_method,sale_price}=req.body||{};
-  if(!store_id||!product_id||!imei||!seller_name||!payment_method||!sale_price) return res.status(400).json({error:'Preencha os campos obrigatórios.'});
-  const db=loadDb(); const unit=db.imei_units.find(x=>x.imei===String(imei).trim()&&x.store_id===Number(store_id)&&x.product_id===Number(product_id)&&x.status==='AVAILABLE');
-  if(!unit) return res.status(400).json({error:'IMEI não disponível nessa loja.'});
-  const saleId=nextId(db.sales);
-  db.sales.push({id:saleId,store_id:Number(store_id),product_id:Number(product_id),imei:String(imei).trim(),seller_name,customer_name:customer_name||null,sale_price:Number(sale_price),payment_method,created_at:now()});
-  unit.status='SOLD'; unit.updated_at=now(); unit.location_note=`Vendido para ${customer_name||'cliente'}`; unit.last_document=`VENDA-${saleId}`;
-  db.stock_movements.push({id:nextId(db.stock_movements),store_id:Number(store_id),product_id:Number(product_id),imei:String(imei).trim(),movement_type:'SALE',quantity:1,document_number:null,seller_name,customer_name:customer_name||null,notes:`Pagamento: ${payment_method}`,created_at:now()});
-  db.finance_entries.push({id:nextId(db.finance_entries),store_id:Number(store_id),entry_type:'INCOME',category:'Venda de aparelho',description:`Venda ${imei} - ${seller_name}`,amount:Number(sale_price),due_date:null,status:'PAID',reference_type:'SALE',reference_id:saleId,created_at:now()});
-  db.note_exits.push({id:nextId(db.note_exits),store_id:Number(store_id),destination_name:customer_name||'Cliente final',note_number:`VENDA-${saleId}`,product_id:Number(product_id),quantity:1,total_value:Number(sale_price),reason:'VENDA',notes:`Venda do IMEI ${imei}`,created_at:now()});
-  saveDb(db); emitEvent('sale.created'); res.json({ok:true});
-});
-
-app.post('/api/service-move', auth, (req,res)=>{
-  const {store_id,product_id,imei,move_type,destination_name,notes}=req.body||{};
-  if(!store_id||!product_id||!imei||!move_type) return res.status(400).json({error:'Preencha os campos obrigatórios.'});
-  if(!['ASSISTANCE','REPACK'].includes(move_type)) return res.status(400).json({error:'Tipo inválido.'});
-  const db=loadDb(); const unit=db.imei_units.find(x=>x.imei===String(imei).trim()&&x.store_id===Number(store_id)&&x.product_id===Number(product_id)&&x.status==='AVAILABLE');
-  if(!unit) return res.status(400).json({error:'IMEI não disponível para saída.'});
-  unit.status = move_type==='ASSISTANCE' ? 'ASSISTANCE' : 'REPACK'; unit.updated_at=now(); unit.location_note=destination_name||null; unit.last_document=move_type;
-  db.service_moves.push({id:nextId(db.service_moves),store_id:Number(store_id),product_id:Number(product_id),imei:String(imei).trim(),move_type,status:'OPEN',destination_name:destination_name||null,notes:notes||null,created_at:now(),returned_at:null});
-  db.stock_movements.push({id:nextId(db.stock_movements),store_id:Number(store_id),product_id:Number(product_id),imei:String(imei).trim(),movement_type:move_type,quantity:1,document_number:null,seller_name:null,customer_name:null,notes:notes||null,created_at:now()});
-  saveDb(db); emitEvent('stock.updated'); res.json({ok:true});
-});
-
-app.post('/api/service-return', auth, (req,res)=>{
-  const {imei,notes}=req.body||{};
-  if(!imei) return res.status(400).json({error:'Informe o IMEI.'});
-  const db=loadDb(); const unit=db.imei_units.find(x=>x.imei===String(imei).trim()&&['ASSISTANCE','REPACK'].includes(x.status));
-  if(!unit) return res.status(400).json({error:'IMEI não está em assistência ou reembalo.'});
-  const last=[...db.service_moves].reverse().find(x=>x.imei===String(imei).trim()&&x.status==='OPEN');
-  unit.status='AVAILABLE'; unit.updated_at=now(); unit.location_note=notes||null; unit.last_document='RETURN';
-  if(last){ last.status='RETURNED'; last.returned_at=now(); last.notes=(last.notes||'') + ` | Retorno: ${notes||'retorno'}`; }
-  db.stock_movements.push({id:nextId(db.stock_movements),store_id:unit.store_id,product_id:unit.product_id,imei:String(imei).trim(),movement_type:'RETURN_TO_STOCK',quantity:1,document_number:null,seller_name:null,customer_name:null,notes:notes||null,created_at:now()});
-  saveDb(db); emitEvent('stock.updated'); res.json({ok:true});
-});
-
-app.post('/api/transfer', auth, (req,res)=>{
-  const {from_store_id,to_store_id,product_id,imei,notes}=req.body||{};
-  if(!from_store_id||!to_store_id||!product_id||!imei) return res.status(400).json({error:'Preencha origem, destino, produto e IMEI.'});
-  if(String(from_store_id)===String(to_store_id)) return res.status(400).json({error:'Origem e destino devem ser diferentes.'});
-  const db=loadDb(); const unit=db.imei_units.find(x=>x.imei===String(imei).trim()&&x.store_id===Number(from_store_id)&&x.product_id===Number(product_id)&&x.status==='AVAILABLE');
-  if(!unit) return res.status(400).json({error:'IMEI não disponível na loja de origem.'});
-  db.transfers.push({id:nextId(db.transfers),from_store_id:Number(from_store_id),to_store_id:Number(to_store_id),product_id:Number(product_id),imei:String(imei).trim(),requested_by:req.user.name,notes:notes||null,created_at:now()});
-  unit.store_id=Number(to_store_id); unit.updated_at=now(); unit.location_note=notes||`Transferido por ${req.user.name}`; unit.last_document='TRANSFER';
-  db.stock_movements.push({id:nextId(db.stock_movements),store_id:Number(from_store_id),product_id:Number(product_id),imei:String(imei).trim(),movement_type:'TRANSFER_OUT',quantity:1,document_number:null,seller_name:null,customer_name:null,notes:notes||null,created_at:now()});
-  db.stock_movements.push({id:nextId(db.stock_movements),store_id:Number(to_store_id),product_id:Number(product_id),imei:String(imei).trim(),movement_type:'TRANSFER_IN',quantity:1,document_number:null,seller_name:null,customer_name:null,notes:notes||null,created_at:now()});
-  saveDb(db); emitEvent('stock.updated'); res.json({ok:true});
-});
-
-app.post('/api/finance-expense', auth, (req,res)=>{
-  const {store_id,category,description,amount,due_date,status}=req.body||{};
-  if(!category||!description||!amount) return res.status(400).json({error:'Preencha categoria, descrição e valor.'});
-  const db=loadDb();
-  db.finance_entries.push({id:nextId(db.finance_entries),store_id:store_id?Number(store_id):null,entry_type:'EXPENSE',category,description,amount:Number(amount),due_date:due_date||null,status:status||'OPEN',reference_type:'MANUAL',reference_id:null,created_at:now()});
-  saveDb(db); emitEvent('finance.updated'); res.json({ok:true});
-});
-
-app.post('/api/finance-income', auth, (req,res)=>{
-  const {store_id,category,description,amount,due_date,status}=req.body||{};
-  if(!category||!description||!amount) return res.status(400).json({error:'Preencha categoria, descrição e valor.'});
-  const db=loadDb();
-  db.finance_entries.push({id:nextId(db.finance_entries),store_id:store_id?Number(store_id):null,entry_type:'INCOME',category,description,amount:Number(amount),due_date:due_date||null,status:status||'OPEN',reference_type:'MANUAL',reference_id:null,created_at:now()});
-  saveDb(db); emitEvent('finance.updated'); res.json({ok:true});
-});
-
-app.get('/api/finance', auth, (req,res)=>{ const db=loadDb(); res.json({entries:mapEnriched(db).finance, summary:cards(db)}); });
-app.get('/api/movements', auth, (req,res)=>{ const db=loadDb(); res.json(mapEnriched(db).moves); });
-app.get('/api/sales', auth, (req,res)=>{ const db=loadDb(); res.json(mapEnriched(db).sales); });
-app.get('/api/service-moves', auth, (req,res)=>{ const db=loadDb(); res.json(mapEnriched(db).service_moves); });
-app.get('/api/transfers', auth, (req,res)=>{ const db=loadDb(); res.json(mapEnriched(db).transfers); });
-app.get('/api/notes', auth, (req,res)=>{ const db=loadDb(); res.json(mapEnriched(db).notes); });
-
-app.post('/api/nfe/parse', auth, async (req,res) => {
-  try{
-    const { xml } = req.body || {};
-    if(!xml || !String(xml).trim()) return res.status(400).json({ error:'Envie o conteúdo XML da nota.' });
-    const parsed = await parseNFeXmlText(String(xml));
-    res.json(parsed);
-  }catch(err){
-    res.status(400).json({ error:'Não foi possível ler o XML da nota.' });
-  }
-});
-
-
-app.get('/api/customers', auth, (req,res)=>{
-  const db = loadDb();
-  let list = mapEnriched(db).customers;
-  const store_ids = String(req.query.store_ids || '').split(',').map(x=>x.trim()).filter(Boolean);
-  if (store_ids.length && !store_ids.includes('ALL')) list = list.filter(x => store_ids.includes(String(x.store_id)));
-  const q = String(req.query.q || '').toLowerCase().trim();
-  if (q) list = list.filter(x => `${x.name||''} ${x.cpf||''} ${x.phone||''}`.toLowerCase().includes(q));
-  res.json(list);
-});
-app.post('/api/customers', auth, (req,res)=>{
-  const { name, cpf, phone, store_id, origin_app } = req.body || {};
-  if (!name || !store_id) return res.status(400).json({ error:'Informe nome e loja.' });
-  const db = loadDb();
-  db.customers.push({ id: nextId(db.customers||[]), name, cpf: cpf||'', phone: phone||'', store_id: Number(store_id), origin_app: !!origin_app, created_at: now() });
-  saveDb(db); emitEvent('customers.updated'); res.json({ ok:true });
-});
-app.get('/api/employees', auth, (req,res)=>{
-  const db = loadDb();
-  let list = mapEnriched(db).employees;
-  const store_ids = String(req.query.store_ids || '').split(',').map(x=>x.trim()).filter(Boolean);
-  if (store_ids.length && !store_ids.includes('ALL')) list = list.filter(x => store_ids.includes(String(x.store_id)));
-  res.json(list);
-});
-app.post('/api/employees', auth, adminOnly, (req,res)=>{
-  const { name, role_name, store_id } = req.body || {};
-  if (!name || !store_id) return res.status(400).json({ error:'Informe nome e loja.' });
-  const db = loadDb();
-  db.employees.push({ id: nextId(db.employees||[]), name, role_name: role_name||'Funcionário', store_id: Number(store_id), active: 1, created_at: now() });
-  saveDb(db); emitEvent('employees.updated'); res.json({ ok:true });
-});
-
-app.get('/api/health', (req,res)=>res.json({ok:true}));
-app.get('*', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
-
-app.post("/api/sell", async (req, res) => {
-  const { imei, store_id } = req.body;
-
+function auth(req, res, next) {
+  const h = req.headers.authorization;
+  if (!h) return res.status(401).json({ error: 'Token ausente' });
   try {
-    // 1. Verifica se o IMEI existe e está disponível no estoque
-    const imeiResult = await pool.query(
-      `
-      SELECT *
-      FROM imeis
-      WHERE imei = $1
-        AND store_id = $2
-        AND status = 'estoque'
-      `,
-      [imei, store_id]
-    );
+    req.user = jwt.verify(h.replace('Bearer ', ''), JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: 'Token inválido' });
+  }
+}
 
-    if (imeiResult.rows.length === 0) {
-      return res.status(400).json({
-        error: "IMEI não encontrado ou não disponível para venda nesta loja."
+// ======================== AUTH ========================
+
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const db = loadDb();
+  const user = db.users.find(u => u.username === username && u.password === password && u.active);
+  if (!user) return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+  const token = jwt.sign({ id: user.id, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
+  res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+});
+
+// ======================== BOOTSTRAP ========================
+
+app.get('/api/bootstrap', auth, (req, res) => {
+  const db = loadDb();
+  res.json({
+    stores: db.stores.filter(s => s.active),
+    products: db.products.filter(p => p.active),
+    sellers: db.sellers.filter(s => s.active),
+    customers: db.customers || [],
+    suppliers: db.suppliers || [],
+    finance_categories: db.finance_categories || [],
+    employees: db.employees || [],
+  });
+});
+
+// ======================== STORES ========================
+
+app.get('/api/stores', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.stores);
+});
+
+app.post('/api/stores', auth, (req, res) => {
+  const db = loadDb();
+  const store = { id: nextId(db.stores), active: 1, ...req.body };
+  db.stores.push(store);
+  saveDb(db);
+  res.json(store);
+});
+
+app.put('/api/stores/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = db.stores.findIndex(s => s.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Loja não encontrada' });
+  db.stores[idx] = { ...db.stores[idx], ...req.body };
+  saveDb(db);
+  res.json(db.stores[idx]);
+});
+
+// ======================== PRODUCTS ========================
+
+app.get('/api/products', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.products);
+});
+
+app.post('/api/products', auth, (req, res) => {
+  const db = loadDb();
+  const product = { id: nextId(db.products), active: 1, ...req.body };
+  db.products.push(product);
+  saveDb(db);
+  broadcast('products_updated', {});
+  res.json(product);
+});
+
+app.put('/api/products/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = db.products.findIndex(p => p.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Produto não encontrado' });
+  db.products[idx] = { ...db.products[idx], ...req.body };
+  saveDb(db);
+  broadcast('products_updated', {});
+  res.json(db.products[idx]);
+});
+
+app.delete('/api/products/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = db.products.findIndex(p => p.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Produto não encontrado' });
+  db.products[idx].active = 0;
+  saveDb(db);
+  res.json({ ok: true });
+});
+
+// ======================== SUPPLIERS ========================
+
+app.get('/api/suppliers', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.suppliers || []);
+});
+
+app.post('/api/suppliers', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.suppliers) db.suppliers = [];
+  const supplier = { id: nextId(db.suppliers), active: 1, created_at: now(), ...req.body };
+  db.suppliers.push(supplier);
+  saveDb(db);
+  res.json(supplier);
+});
+
+app.put('/api/suppliers/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = (db.suppliers || []).findIndex(s => s.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Fornecedor não encontrado' });
+  db.suppliers[idx] = { ...db.suppliers[idx], ...req.body };
+  saveDb(db);
+  res.json(db.suppliers[idx]);
+});
+
+app.delete('/api/suppliers/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = (db.suppliers || []).findIndex(s => s.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Fornecedor não encontrado' });
+  db.suppliers[idx].active = 0;
+  saveDb(db);
+  res.json({ ok: true });
+});
+
+// ======================== SELLERS ========================
+
+app.get('/api/sellers', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.sellers.filter(s => s.active));
+});
+
+app.post('/api/sellers', auth, (req, res) => {
+  const db = loadDb();
+  const seller = { id: nextId(db.sellers), active: 1, ...req.body };
+  db.sellers.push(seller);
+  saveDb(db);
+  res.json(seller);
+});
+
+app.put('/api/sellers/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = db.sellers.findIndex(s => s.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Vendedor não encontrado' });
+  db.sellers[idx] = { ...db.sellers[idx], ...req.body };
+  saveDb(db);
+  res.json(db.sellers[idx]);
+});
+
+// ======================== CUSTOMERS ========================
+
+app.get('/api/customers', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.customers || []);
+});
+
+app.post('/api/customers', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.customers) db.customers = [];
+  const customer = { id: nextId(db.customers), created_at: now(), ...req.body };
+  db.customers.push(customer);
+  saveDb(db);
+  res.json(customer);
+});
+
+app.put('/api/customers/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = (db.customers || []).findIndex(c => c.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Cliente não encontrado' });
+  db.customers[idx] = { ...db.customers[idx], ...req.body };
+  saveDb(db);
+  res.json(db.customers[idx]);
+});
+
+// ======================== IMEI ========================
+
+app.get('/api/imeis', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, product_id, status } = req.query;
+  let units = db.imei_units || [];
+  if (store_id) units = units.filter(u => u.store_id === Number(store_id));
+  if (product_id) units = units.filter(u => u.product_id === Number(product_id));
+  if (status) units = units.filter(u => u.status === status);
+  res.json(units);
+});
+
+app.post('/api/imeis', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.imei_units) db.imei_units = [];
+
+  const { imeis, store_id, product_id, note_entry_id, color, storage, unit_cost } = req.body;
+  const imeiList = Array.isArray(imeis) ? imeis : [imeis];
+  const added = [];
+  const duplicates = [];
+
+  for (const imei of imeiList) {
+    const trimmed = String(imei).trim();
+    if (!trimmed) continue;
+    if (db.imei_units.find(u => u.imei === trimmed)) {
+      duplicates.push(trimmed);
+      continue;
+    }
+    const unit = {
+      id: nextId(db.imei_units),
+      imei: trimmed,
+      store_id: Number(store_id),
+      product_id: Number(product_id),
+      note_entry_id: note_entry_id || null,
+      color: color || '',
+      storage: storage || '',
+      unit_cost: Number(unit_cost || 0),
+      status: 'AVAILABLE',
+      created_at: now(),
+    };
+    db.imei_units.push(unit);
+    added.push(unit);
+  }
+
+  saveDb(db);
+  broadcast('stock_updated', { store_id, product_id });
+  res.json({ added: added.length, duplicates: duplicates.length, units: added });
+});
+
+app.get('/api/stock', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  const units = db.imei_units || [];
+  const result = {};
+  for (const p of db.products) {
+    let storeUnits = units.filter(u => u.product_id === p.id && u.status === 'AVAILABLE');
+    if (store_id) storeUnits = storeUnits.filter(u => u.store_id === Number(store_id));
+    result[p.id] = {
+      product_id: p.id,
+      product_name: p.name,
+      quantity: storeUnits.length,
+      by_store: {},
+    };
+    for (const u of storeUnits) {
+      if (!result[p.id].by_store[u.store_id]) result[p.id].by_store[u.store_id] = 0;
+      result[p.id].by_store[u.store_id]++;
+    }
+  }
+  res.json(Object.values(result));
+});
+
+// ======================== SALES (PDV) ========================
+
+app.post('/api/sell', auth, (req, res) => {
+  const { imei, product_id, store_id, seller_id, customer_id, price, payment_method, installments, down_payment, notes } = req.body;
+  if (!imei || !product_id || !store_id || !price) {
+    return res.status(400).json({ error: 'Campos obrigatórios: imei, product_id, store_id, price' });
+  }
+
+  const db = loadDb();
+  const unit = (db.imei_units || []).find(u => u.imei === imei && u.store_id === Number(store_id) && u.status === 'AVAILABLE');
+  if (!unit) return res.status(400).json({ error: 'IMEI não encontrado ou indisponível nesta loja' });
+
+  const product = db.products.find(p => p.id === Number(product_id));
+  const seller = db.sellers.find(s => s.id === Number(seller_id));
+
+  unit.status = 'SOLD';
+  unit.sold_at = now();
+  unit.sold_price = Number(price);
+
+  const sale = {
+    id: nextId(db.sales),
+    imei,
+    product_id: Number(product_id),
+    product_name: product ? product.name : '',
+    store_id: Number(store_id),
+    seller_id: seller_id ? Number(seller_id) : null,
+    seller_name: seller ? seller.name : '',
+    customer_id: customer_id ? Number(customer_id) : null,
+    price: Number(price),
+    payment_method: payment_method || 'DINHEIRO',
+    installments: installments ? Number(installments) : 1,
+    down_payment: down_payment ? Number(down_payment) : 0,
+    notes: notes || '',
+    status: 'COMPLETED',
+    created_at: now(),
+  };
+  db.sales.push(sale);
+
+  if (!db.finance_entries) db.finance_entries = [];
+  db.finance_entries.push({
+    id: nextId(db.finance_entries),
+    type: 'INCOME',
+    category_id: 1,
+    description: `Venda ${product ? product.name : ''} IMEI ${imei}`,
+    value: Number(price),
+    store_id: Number(store_id),
+    sale_id: sale.id,
+    date: now().substring(0, 10),
+    created_at: now(),
+  });
+
+  saveDb(db);
+  broadcast('sale_completed', { sale });
+  res.json({ ok: true, sale });
+});
+
+app.get('/api/sales', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, start, end } = req.query;
+  let sales = db.sales || [];
+  if (store_id) sales = sales.filter(s => s.store_id === Number(store_id));
+  if (start) sales = sales.filter(s => s.created_at >= start);
+  if (end) sales = sales.filter(s => s.created_at <= end + ' 23:59:59');
+  res.json(sales);
+});
+
+// ======================== NOTE ENTRY (Entrada de Nota) ========================
+
+app.post('/api/note-entry', auth, (req, res) => {
+  const { store_id, supplier_id, nota_number, nota_key, items, total_value, notes } = req.body;
+  if (!store_id || !items || !items.length) {
+    return res.status(400).json({ error: 'Campos obrigatórios: store_id, items' });
+  }
+
+  const db = loadDb();
+  if (!db.note_entries) db.note_entries = [];
+  if (!db.imei_units) db.imei_units = [];
+
+  const entry = {
+    id: nextId(db.note_entries),
+    store_id: Number(store_id),
+    supplier_id: supplier_id ? Number(supplier_id) : null,
+    nota_number: nota_number || '',
+    nota_key: nota_key || '',
+    total_value: Number(total_value || 0),
+    notes: notes || '',
+    status: 'RECEIVED',
+    created_at: now(),
+    items: [],
+  };
+
+  let totalAdded = 0;
+  for (const item of items) {
+    const { product_id, imeis, color, storage, unit_cost } = item;
+    const imeiList = Array.isArray(imeis) ? imeis : (imeis || '').split(/[\n,;]+/).map(x => x.trim()).filter(Boolean);
+    const added = [];
+    for (const imei of imeiList) {
+      if (!imei) continue;
+      if (db.imei_units.find(u => u.imei === imei)) continue;
+      const unit = {
+        id: nextId(db.imei_units),
+        imei,
+        store_id: Number(store_id),
+        product_id: Number(product_id),
+        note_entry_id: entry.id,
+        color: color || '',
+        storage: storage || '',
+        unit_cost: Number(unit_cost || 0),
+        status: 'AVAILABLE',
+        created_at: now(),
+      };
+      db.imei_units.push(unit);
+      added.push(imei);
+      totalAdded++;
+    }
+    entry.items.push({ product_id: Number(product_id), qty: added.length, imeis: added, color, storage, unit_cost });
+  }
+
+  db.note_entries.push(entry);
+
+  if (!db.finance_entries) db.finance_entries = [];
+  db.finance_entries.push({
+    id: nextId(db.finance_entries),
+    type: 'EXPENSE',
+    category_id: 9,
+    description: `Entrada Nota ${nota_number || entry.id} - ${totalAdded} aparelhos`,
+    value: Number(total_value || 0),
+    store_id: Number(store_id),
+    note_entry_id: entry.id,
+    date: now().substring(0, 10),
+    created_at: now(),
+  });
+
+  if (total_value && Number(total_value) > 0) {
+    if (!db.contas_pagar) db.contas_pagar = [];
+    db.contas_pagar.push({
+      id: nextId(db.contas_pagar),
+      description: `NF ${nota_number || entry.id} - Fornecedor`,
+      supplier_id: supplier_id ? Number(supplier_id) : null,
+      store_id: Number(store_id),
+      value: Number(total_value),
+      due_date: '',
+      status: 'PENDING',
+      note_entry_id: entry.id,
+      created_at: now(),
+    });
+  }
+
+  saveDb(db);
+  broadcast('stock_updated', { store_id });
+  res.json({ ok: true, entry, imeis_added: totalAdded });
+});
+
+app.get('/api/note-entries', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  let entries = db.note_entries || [];
+  if (store_id) entries = entries.filter(e => e.store_id === Number(store_id));
+  res.json(entries);
+});
+
+// ======================== NOTE EXIT ========================
+
+app.post('/api/note-exit', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.note_exits) db.note_exits = [];
+  const exit = { id: nextId(db.note_exits), created_at: now(), status: 'PENDING', ...req.body };
+  db.note_exits.push(exit);
+  saveDb(db);
+  res.json(exit);
+});
+
+app.get('/api/note-exits', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  let exits = db.note_exits || [];
+  if (store_id) exits = exits.filter(e => e.store_id === Number(store_id));
+  res.json(exits);
+});
+
+// ======================== NFE CONFIG ========================
+
+app.get('/api/nfe/config', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  const configs = db.nfe_config || [];
+  if (store_id) return res.json(configs.find(c => c.store_id === Number(store_id)) || null);
+  res.json(configs);
+});
+
+app.post('/api/nfe/config', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.nfe_config) db.nfe_config = [];
+  const { store_id } = req.body;
+  const idx = db.nfe_config.findIndex(c => c.store_id === Number(store_id));
+  if (idx >= 0) {
+    db.nfe_config[idx] = { ...db.nfe_config[idx], ...req.body, updated_at: now() };
+    saveDb(db);
+    return res.json(db.nfe_config[idx]);
+  }
+  const cfg = { id: nextId(db.nfe_config), created_at: now(), ...req.body };
+  db.nfe_config.push(cfg);
+  saveDb(db);
+  res.json(cfg);
+});
+
+// ======================== NFE EMIT ========================
+
+app.post('/api/nfe/emit', auth, async (req, res) => {
+  const db = loadDb();
+  const { store_id, items, customer, payment_method, total_value, ambiente } = req.body;
+
+  const cfg = (db.nfe_config || []).find(c => c.store_id === Number(store_id));
+  if (!cfg) return res.status(400).json({ error: 'Configure os dados fiscais da loja antes de emitir NF-e' });
+
+  if (!db.nfe_emitidas) db.nfe_emitidas = [];
+  const lastNfe = db.nfe_emitidas.filter(n => n.store_id === Number(store_id));
+  const numero = (Number(cfg.numero_inicial) || 1) + lastNfe.length;
+
+  const nfe = {
+    id: nextId(db.nfe_emitidas),
+    store_id: Number(store_id),
+    numero,
+    serie: cfg.serie || '1',
+    ambiente: ambiente || cfg.ambiente || 'homologacao',
+    status: 'PENDING',
+    customer: customer || {},
+    items: items || [],
+    total_value: Number(total_value || 0),
+    payment_method: payment_method || 'DINHEIRO',
+    created_at: now(),
+    protocol: '',
+    chave: '',
+    xml: '',
+    pdf_url: '',
+    error: '',
+  };
+
+  if (cfg.focus_token) {
+    try {
+      const https = require('https');
+      const baseUrl = nfe.ambiente === 'producao'
+        ? 'https://api.focusnfe.com.br'
+        : 'https://homologacao.focusnfe.com.br';
+
+      const refNfe = `${store_id}-${Date.now()}`;
+      const payload = buildFocusNfePayload(cfg, nfe, refNfe);
+      const payloadStr = JSON.stringify(payload);
+
+      const result = await new Promise((resolve, reject) => {
+        const urlObj = new URL(`${baseUrl}/v2/nfe?ref=${refNfe}`);
+        const options = {
+          hostname: urlObj.hostname,
+          path: urlObj.pathname + urlObj.search,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payloadStr),
+            'Authorization': 'Basic ' + Buffer.from(cfg.focus_token + ':').toString('base64'),
+          },
+        };
+        const r = https.request(options, resp => {
+          let data = '';
+          resp.on('data', chunk => data += chunk);
+          resp.on('end', () => {
+            try { resolve(JSON.parse(data)); } catch { resolve({ status: 'error', message: data }); }
+          });
+        });
+        r.on('error', reject);
+        r.write(payloadStr);
+        r.end();
+      });
+
+      nfe.status = result.status || 'PROCESSING';
+      nfe.chave = result.chave_nfe || '';
+      nfe.protocol = result.numero_protocolo || '';
+      nfe.pdf_url = result.caminho_danfe || '';
+      nfe.focus_ref = refNfe;
+    } catch (err) {
+      nfe.status = 'ERROR';
+      nfe.error = err.message;
+    }
+  } else {
+    nfe.status = 'DRAFT';
+    nfe.error = 'Configure o token Focus NFe para emissão automática';
+  }
+
+  db.nfe_emitidas.push(nfe);
+  saveDb(db);
+  broadcast('nfe_emitida', { nfe });
+  res.json({ ok: true, nfe });
+});
+
+app.get('/api/nfe/emitidas', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  let nfes = db.nfe_emitidas || [];
+  if (store_id) nfes = nfes.filter(n => n.store_id === Number(store_id));
+  res.json(nfes);
+});
+
+function buildFocusNfePayload(cfg, nfe, ref) {
+  const itens = (nfe.items || []).map((item, i) => ({
+    numero_item: i + 1,
+    codigo_produto: String(item.product_id || i + 1),
+    descricao: item.product_name || item.description || 'Produto',
+    codigo_ncm: item.ncm || '8517120000',
+    cfop: item.cfop || '5102',
+    unidade_comercial: item.unit || 'UN',
+    quantidade_comercial: item.qty || 1,
+    valor_unitario_comercial: item.unit_price || item.price || 0,
+    valor_unitario_tributavel: item.unit_price || item.price || 0,
+    unidade_tributavel: item.unit || 'UN',
+    quantidade_tributavel: item.qty || 1,
+    codigo_barras_comercial: item.barcode || 'SEM GTIN',
+    icms_origem: 0,
+    icms_modalidade_determinacao_bc: 3,
+    icms_aliquota: 0,
+    icms_modalidade_base_calculo: 3,
+    pis_modalidade: '07',
+    cofins_modalidade: '07',
+  }));
+
+  return {
+    natureza_operacao: 'VENDA DE MERCADORIA',
+    forma_pagamento: 0,
+    tipo_documento: 1,
+    local_destino: 1,
+    codigo_municipio_ocorrencia: cfg.codigo_municipio || '2611606',
+    formato_impressao_danfe: 1,
+    tipo_emissao: 1,
+    finalidade_emissao: 1,
+    consumidor_final: 1,
+    presenca_comprador: 1,
+    emitente: {
+      cnpj: (cfg.cnpj || '').replace(/\D/g, ''),
+      nome: cfg.razao_social || '',
+      nome_fantasia: cfg.nome_fantasia || '',
+      logradouro: cfg.logradouro || '',
+      numero: cfg.numero || 's/n',
+      bairro: cfg.bairro || '',
+      codigo_municipio: cfg.codigo_municipio || '2611606',
+      municipio: cfg.municipio || '',
+      uf: cfg.uf || 'PE',
+      cep: (cfg.cep || '').replace(/\D/g, ''),
+      codigo_pais: '1058',
+      pais: 'Brasil',
+      telefone: (cfg.fone || '').replace(/\D/g, ''),
+      inscricao_estadual: cfg.ie || '',
+      regime_tributario: Number(cfg.crt) || 1,
+    },
+    destinatario: nfe.customer && (nfe.customer.cpf || nfe.customer.cnpj) ? {
+      cpf_cnpj: ((nfe.customer.cpf || nfe.customer.cnpj) || '').replace(/\D/g, ''),
+      nome: nfe.customer.name || 'CONSUMIDOR',
+      email: nfe.customer.email || '',
+      logradouro: nfe.customer.logradouro || '',
+      numero: nfe.customer.numero || 's/n',
+      bairro: nfe.customer.bairro || '',
+      codigo_municipio: nfe.customer.codigo_municipio || cfg.codigo_municipio || '2611606',
+      municipio: nfe.customer.municipio || '',
+      uf: nfe.customer.uf || cfg.uf || 'PE',
+      cep: (nfe.customer.cep || '').replace(/\D/g, ''),
+      codigo_pais: '1058',
+      pais: 'Brasil',
+      indicador_ie_destinatario: 9,
+    } : undefined,
+    itens,
+    pagamentos: [{ forma_pagamento: mapPayment(nfe.payment_method), valor: nfe.total_value }],
+    serie: nfe.serie,
+    numero: nfe.numero,
+    data_emissao: new Date().toISOString().replace('Z', '-03:00'),
+    data_entrada_saida: new Date().toISOString().replace('Z', '-03:00'),
+  };
+}
+
+function mapPayment(method) {
+  const m = { 'DINHEIRO': '01', 'PIX': '17', 'CARTAO_CREDITO': '03', 'CARTAO_DEBITO': '04', 'CREDIARIO': '99', 'BOLETO': '15' };
+  return m[method] || '99';
+}
+
+// ======================== FINANCE ========================
+
+app.get('/api/finance', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, type, start, end } = req.query;
+  let entries = db.finance_entries || [];
+  if (store_id) entries = entries.filter(e => e.store_id === Number(store_id));
+  if (type) entries = entries.filter(e => e.type === type);
+  if (start) entries = entries.filter(e => e.date >= start);
+  if (end) entries = entries.filter(e => e.date <= end);
+  res.json(entries);
+});
+
+app.post('/api/finance', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.finance_entries) db.finance_entries = [];
+  const entry = { id: nextId(db.finance_entries), date: now().substring(0, 10), created_at: now(), ...req.body };
+  db.finance_entries.push(entry);
+  saveDb(db);
+  broadcast('finance_updated', {});
+  res.json(entry);
+});
+
+app.post('/api/finance-expense', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.finance_entries) db.finance_entries = [];
+  const entry = { id: nextId(db.finance_entries), type: 'EXPENSE', date: now().substring(0, 10), created_at: now(), ...req.body };
+  db.finance_entries.push(entry);
+  saveDb(db);
+  broadcast('finance_updated', {});
+  res.json(entry);
+});
+
+app.post('/api/finance-income', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.finance_entries) db.finance_entries = [];
+  const entry = { id: nextId(db.finance_entries), type: 'INCOME', date: now().substring(0, 10), created_at: now(), ...req.body };
+  db.finance_entries.push(entry);
+  saveDb(db);
+  broadcast('finance_updated', {});
+  res.json(entry);
+});
+
+// ======================== CONTAS A PAGAR ========================
+
+app.get('/api/contas-pagar', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, status } = req.query;
+  let items = db.contas_pagar || [];
+  if (store_id) items = items.filter(i => i.store_id === Number(store_id));
+  if (status) items = items.filter(i => i.status === status);
+  res.json(items);
+});
+
+app.post('/api/contas-pagar', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.contas_pagar) db.contas_pagar = [];
+  const item = { id: nextId(db.contas_pagar), status: 'PENDING', created_at: now(), ...req.body };
+  db.contas_pagar.push(item);
+  saveDb(db);
+  res.json(item);
+});
+
+app.patch('/api/contas-pagar/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = (db.contas_pagar || []).findIndex(i => i.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Conta não encontrada' });
+  db.contas_pagar[idx] = { ...db.contas_pagar[idx], ...req.body };
+  if (req.body.status === 'PAID' && !db.contas_pagar[idx].paid_at) {
+    db.contas_pagar[idx].paid_at = now();
+    if (!db.finance_entries) db.finance_entries = [];
+    db.finance_entries.push({
+      id: nextId(db.finance_entries),
+      type: 'EXPENSE',
+      category_id: db.contas_pagar[idx].category_id || 9,
+      description: `Pagamento: ${db.contas_pagar[idx].description}`,
+      value: db.contas_pagar[idx].value,
+      store_id: db.contas_pagar[idx].store_id,
+      date: now().substring(0, 10),
+      created_at: now(),
+    });
+  }
+  saveDb(db);
+  res.json(db.contas_pagar[idx]);
+});
+
+// ======================== CONTAS A RECEBER ========================
+
+app.get('/api/contas-receber', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, status } = req.query;
+  let items = db.contas_receber || [];
+  if (store_id) items = items.filter(i => i.store_id === Number(store_id));
+  if (status) items = items.filter(i => i.status === status);
+  res.json(items);
+});
+
+app.post('/api/contas-receber', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.contas_receber) db.contas_receber = [];
+  const item = { id: nextId(db.contas_receber), status: 'PENDING', created_at: now(), ...req.body };
+  db.contas_receber.push(item);
+  saveDb(db);
+  res.json(item);
+});
+
+app.patch('/api/contas-receber/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = (db.contas_receber || []).findIndex(i => i.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Conta não encontrada' });
+  db.contas_receber[idx] = { ...db.contas_receber[idx], ...req.body };
+  if (req.body.status === 'RECEIVED' && !db.contas_receber[idx].received_at) {
+    db.contas_receber[idx].received_at = now();
+    if (!db.finance_entries) db.finance_entries = [];
+    db.finance_entries.push({
+      id: nextId(db.finance_entries),
+      type: 'INCOME',
+      category_id: db.contas_receber[idx].category_id || 1,
+      description: `Recebimento: ${db.contas_receber[idx].description}`,
+      value: db.contas_receber[idx].value,
+      store_id: db.contas_receber[idx].store_id,
+      date: now().substring(0, 10),
+      created_at: now(),
+    });
+  }
+  saveDb(db);
+  res.json(db.contas_receber[idx]);
+});
+
+// ======================== FINANCE CATEGORIES ========================
+
+app.get('/api/finance-categories', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.finance_categories || []);
+});
+
+app.post('/api/finance-categories', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.finance_categories) db.finance_categories = [];
+  const cat = { id: nextId(db.finance_categories), active: 1, ...req.body };
+  db.finance_categories.push(cat);
+  saveDb(db);
+  res.json(cat);
+});
+
+// ======================== MOVEMENTS ========================
+
+app.get('/api/movements', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.service_moves || []);
+});
+
+app.post('/api/service-move', auth, (req, res) => {
+  const { imei, from_store_id, to_store_id, notes } = req.body;
+  const db = loadDb();
+  const unit = (db.imei_units || []).find(u => u.imei === imei && u.store_id === Number(from_store_id) && u.status === 'AVAILABLE');
+  if (!unit) return res.status(400).json({ error: 'IMEI não disponível na loja de origem' });
+  unit.store_id = Number(to_store_id);
+  const move = {
+    id: nextId(db.service_moves || []),
+    imei, from_store_id: Number(from_store_id), to_store_id: Number(to_store_id),
+    notes: notes || '', type: 'TRANSFER', created_at: now(),
+  };
+  if (!db.service_moves) db.service_moves = [];
+  db.service_moves.push(move);
+  saveDb(db);
+  broadcast('stock_updated', { from_store_id, to_store_id });
+  res.json({ ok: true, move });
+});
+
+app.post('/api/service-return', auth, (req, res) => {
+  const { imei, store_id, notes } = req.body;
+  const db = loadDb();
+  const unit = (db.imei_units || []).find(u => u.imei === imei);
+  if (!unit) return res.status(400).json({ error: 'IMEI não encontrado' });
+  unit.status = 'AVAILABLE';
+  unit.store_id = Number(store_id);
+  unit.sold_at = null;
+  if (!db.service_moves) db.service_moves = [];
+  const move = { id: nextId(db.service_moves), imei, to_store_id: Number(store_id), notes: notes || '', type: 'RETURN', created_at: now() };
+  db.service_moves.push(move);
+  saveDb(db);
+  broadcast('stock_updated', { store_id });
+  res.json({ ok: true, move });
+});
+
+app.post('/api/transfer', auth, (req, res) => {
+  const { imei, from_store_id, to_store_id, notes } = req.body;
+  const db = loadDb();
+  const unit = (db.imei_units || []).find(u => u.imei === imei && u.store_id === Number(from_store_id) && u.status === 'AVAILABLE');
+  if (!unit) return res.status(400).json({ error: 'IMEI não disponível na loja de origem' });
+  unit.store_id = Number(to_store_id);
+  if (!db.service_moves) db.service_moves = [];
+  const move = { id: nextId(db.service_moves), imei, from_store_id: Number(from_store_id), to_store_id: Number(to_store_id), notes: notes || '', type: 'TRANSFER', created_at: now() };
+  db.service_moves.push(move);
+  saveDb(db);
+  broadcast('stock_updated', { to_store_id });
+  res.json({ ok: true, move });
+});
+
+// ======================== CASH ========================
+
+app.post('/api/cash/open', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.cash_registers) db.cash_registers = [];
+  const open = db.cash_registers.find(c => c.store_id === Number(req.body.store_id) && c.status === 'OPEN');
+  if (open) return res.json(open);
+  const cr = {
+    id: nextId(db.cash_registers), store_id: Number(req.body.store_id),
+    opened_by: req.user.id, opening_amount: Number(req.body.amount || 0),
+    closing_amount: null, opened_at: now(), closed_at: null, status: 'OPEN',
+  };
+  db.cash_registers.push(cr);
+  saveDb(db);
+  res.json(cr);
+});
+
+app.post('/api/cash/close', auth, (req, res) => {
+  const db = loadDb();
+  const open = (db.cash_registers || []).find(c => c.store_id === Number(req.body.store_id) && c.status === 'OPEN');
+  if (!open) return res.status(400).json({ error: 'Caixa não aberto nesta loja' });
+  open.closing_amount = Number(req.body.amount || 0);
+  open.closed_at = now();
+  open.status = 'CLOSED';
+  saveDb(db);
+  res.json(open);
+});
+
+// ======================== USERS / EMPLOYEES ========================
+
+app.get('/api/users', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.users.map(u => ({ ...u, password: undefined })));
+});
+
+app.post('/api/users', auth, (req, res) => {
+  const db = loadDb();
+  const user = { id: nextId(db.users), active: 1, role: 'SELLER', ...req.body };
+  db.users.push(user);
+  saveDb(db);
+  res.json({ ...user, password: undefined });
+});
+
+app.get('/api/employees', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.employees || []);
+});
+
+app.post('/api/employees', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.employees) db.employees = [];
+  const emp = { id: nextId(db.employees), active: 1, created_at: now(), ...req.body };
+  db.employees.push(emp);
+  saveDb(db);
+  res.json(emp);
+});
+
+// ======================== NOTES (legacy + XML parse) ========================
+
+app.get('/api/notes', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.note_entries || []);
+});
+
+app.post('/api/nfe/parse', auth, (req, res) => {
+  const { xml } = req.body;
+  if (!xml) return res.status(400).json({ error: 'XML obrigatório' });
+  try {
+    const notaMatch = xml.match(/<nNF>(\d+)<\/nNF>/);
+    const chaveMatch = xml.match(/Id="NFe(\d+)"/);
+    const fornMatch = xml.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/);
+    const cnpjMatch = xml.match(/<emit>[\s\S]*?<CNPJ>(\d+)<\/CNPJ>/);
+    const items = [];
+    const detRegex = /<det[^>]*>([\s\S]*?)<\/det>/g;
+    let m;
+    while ((m = detRegex.exec(xml)) !== null) {
+      const det = m[1];
+      items.push({
+        product_name: (det.match(/<xProd>(.*?)<\/xProd>/) || [])[1] || '',
+        ncm: (det.match(/<NCM>(\d+)<\/NCM>/) || [])[1] || '',
+        qty: parseFloat((det.match(/<qCom>([\d.]+)<\/qCom>/) || [])[1] || '1'),
+        unit_price: parseFloat((det.match(/<vUnCom>([\d.]+)<\/vUnCom>/) || [])[1] || '0'),
+        barcode: (det.match(/<cEAN>(\d+)<\/cEAN>/) || [])[1] || '',
       });
     }
-
-    const imeiData = imeiResult.rows[0];
-    const product_id = imeiData.product_id;
-
-    // 2. Marca o IMEI como vendido
-    await pool.query(
-      `
-      UPDATE imeis
-      SET status = 'vendido'
-      WHERE imei = $1
-      `,
-      [imei]
-    );
-
-    // 3. Baixa o estoque da loja
-    await pool.query(
-      `
-      UPDATE stock
-      SET quantity = quantity - 1
-      WHERE product_id = $1
-        AND store_id = $2
-      `,
-      [product_id, store_id]
-    );
-
-    // 4. Registra a venda
-    await pool.query(
-      `
-      INSERT INTO sales (store_id, product_id, imei, price)
-      VALUES ($1, $2, $3, $4)
-      `,
-      [store_id, product_id, imei, 0]
-    );
-
-    // 5. Resposta final
-    return res.json({
-      success: true,
-      message: "Venda realizada com sucesso.",
-      imei: imei,
-      product_id: product_id,
-      store_id: store_id
+    res.json({
+      nota_number: notaMatch ? notaMatch[1] : '',
+      nota_key: chaveMatch ? chaveMatch[1] : '',
+      supplier_name: fornMatch ? fornMatch[1] : '',
+      supplier_cnpj: cnpjMatch ? cnpjMatch[1] : '',
+      items,
     });
-
-  } catch (error) {
-    console.error("Erro na venda:", error);
-    return res.status(500).json({
-      error: "Erro interno ao processar a venda."
-    });
+  } catch (e) {
+    res.status(400).json({ error: 'Erro ao processar XML: ' + e.message });
   }
 });
-app.listen(PORT, ()=>console.log(`JRS PDV V4 rodando em http://localhost:${PORT}`));
+
+// ======================== REPORTS ========================
+
+app.get('/api/reports/sales-by-product', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, start, end } = req.query;
+  let sales = db.sales || [];
+  if (store_id) sales = sales.filter(s => s.store_id === Number(store_id));
+  if (start) sales = sales.filter(s => s.created_at >= start);
+  if (end) sales = sales.filter(s => s.created_at <= end + ' 23:59:59');
+  const report = {};
+  for (const sale of sales) {
+    if (!report[sale.product_id]) report[sale.product_id] = { product_id: sale.product_id, product_name: sale.product_name, qty: 0, total: 0 };
+    report[sale.product_id].qty++;
+    report[sale.product_id].total += sale.price;
+  }
+  res.json(Object.values(report).sort((a, b) => b.total - a.total));
+});
+
+app.get('/api/reports/sales-by-store', auth, (req, res) => {
+  const db = loadDb();
+  const { start, end } = req.query;
+  let sales = db.sales || [];
+  if (start) sales = sales.filter(s => s.created_at >= start);
+  if (end) sales = sales.filter(s => s.created_at <= end + ' 23:59:59');
+  const report = {};
+  for (const sale of sales) {
+    const store = db.stores.find(st => st.id === sale.store_id);
+    if (!report[sale.store_id]) report[sale.store_id] = { store_id: sale.store_id, store_name: store ? store.name : String(sale.store_id), qty: 0, total: 0 };
+    report[sale.store_id].qty++;
+    report[sale.store_id].total += sale.price;
+  }
+  res.json(Object.values(report).sort((a, b) => b.total - a.total));
+});
+
+app.get('/api/reports/stock-summary', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  const units = db.imei_units || [];
+  const summary = db.products.filter(x => x.active).map(p => {
+    let avail = units.filter(u => u.product_id === p.id && u.status === 'AVAILABLE');
+    let sold = units.filter(u => u.product_id === p.id && u.status === 'SOLD');
+    if (store_id) { avail = avail.filter(u => u.store_id === Number(store_id)); sold = sold.filter(u => u.store_id === Number(store_id)); }
+    return { product_id: p.id, product_name: p.name, price: p.price, available: avail.length, sold: sold.length, total: avail.length + sold.length };
+  });
+  res.json(summary);
+});
+
+// ======================== DASHBOARD ========================
+
+app.get('/api/dashboard', auth, (req, res) => {
+  const db = loadDb();
+  const today = now().substring(0, 10);
+  const sales = db.sales || [];
+  const todaySales = sales.filter(s => s.created_at.startsWith(today));
+  const imeis = db.imei_units || [];
+
+  res.json({
+    today_sales: todaySales.length,
+    today_revenue: todaySales.reduce((a, s) => a + s.price, 0),
+    total_stock: imeis.filter(u => u.status === 'AVAILABLE').length,
+    total_imeis: imeis.length,
+    contas_pagar_pendente: (db.contas_pagar || []).filter(c => c.status === 'PENDING').reduce((a, c) => a + c.value, 0),
+    contas_receber_pendente: (db.contas_receber || []).filter(c => c.status === 'PENDING').reduce((a, c) => a + c.value, 0),
+    recent_sales: todaySales.slice(-10).reverse(),
+    store_totals: db.stores.map(st => ({
+      store_id: st.id,
+      store_name: st.name,
+      stock: imeis.filter(u => u.store_id === st.id && u.status === 'AVAILABLE').length,
+      today_sales: todaySales.filter(s => s.store_id === st.id).length,
+    })),
+  });
+});
+
+// ======================== SSE ========================
+
+app.get('/api/events', auth, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  res.write('data: {"event":"connected"}\n\n');
+  sseClients.push(res);
+  req.on('close', () => {
+    const i = sseClients.indexOf(res);
+    if (i >= 0) sseClients.splice(i, 1);
+  });
+});
+
+app.listen(PORT, () => console.log(`JRS PDV V9 rodando em http://localhost:${PORT}`));

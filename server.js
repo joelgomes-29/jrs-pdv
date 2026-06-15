@@ -1,4 +1,5 @@
-
+require("dotenv").config();
+const pool = require("./db");
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -9,6 +10,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 const sessions = new Map();
+sessions.set("meu-token-teste", {
+  id: 1,
+  nome: "Joel",
+  role: "ADMIN"
+});
 const sseClients = new Set();
 
 app.use(express.json({ limit: '5mb' }));
@@ -351,4 +357,75 @@ app.post('/api/employees', auth, adminOnly, (req,res)=>{
 app.get('/api/health', (req,res)=>res.json({ok:true}));
 app.get('*', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 
+app.post("/api/sell", async (req, res) => {
+  const { imei, store_id } = req.body;
+
+  try {
+    // 1. Verifica se o IMEI existe e está disponível no estoque
+    const imeiResult = await pool.query(
+      `
+      SELECT *
+      FROM imeis
+      WHERE imei = $1
+        AND store_id = $2
+        AND status = 'estoque'
+      `,
+      [imei, store_id]
+    );
+
+    if (imeiResult.rows.length === 0) {
+      return res.status(400).json({
+        error: "IMEI não encontrado ou não disponível para venda nesta loja."
+      });
+    }
+
+    const imeiData = imeiResult.rows[0];
+    const product_id = imeiData.product_id;
+
+    // 2. Marca o IMEI como vendido
+    await pool.query(
+      `
+      UPDATE imeis
+      SET status = 'vendido'
+      WHERE imei = $1
+      `,
+      [imei]
+    );
+
+    // 3. Baixa o estoque da loja
+    await pool.query(
+      `
+      UPDATE stock
+      SET quantity = quantity - 1
+      WHERE product_id = $1
+        AND store_id = $2
+      `,
+      [product_id, store_id]
+    );
+
+    // 4. Registra a venda
+    await pool.query(
+      `
+      INSERT INTO sales (store_id, product_id, imei, price)
+      VALUES ($1, $2, $3, $4)
+      `,
+      [store_id, product_id, imei, 0]
+    );
+
+    // 5. Resposta final
+    return res.json({
+      success: true,
+      message: "Venda realizada com sucesso.",
+      imei: imei,
+      product_id: product_id,
+      store_id: store_id
+    });
+
+  } catch (error) {
+    console.error("Erro na venda:", error);
+    return res.status(500).json({
+      error: "Erro interno ao processar a venda."
+    });
+  }
+});
 app.listen(PORT, ()=>console.log(`JRS PDV V4 rodando em http://localhost:${PORT}`));

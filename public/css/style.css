@@ -314,3 +314,61 @@ input,select,textarea{
 .storeFilterCard select{min-height:44px}
 #globalStoreFilter{height:72px}
 @media(max-width:1200px){.headActions{min-width:0;flex-direction:column;width:100%}.storeFilterCard{min-width:0}}
+
+/* ===== V5 additions ===== */
+
+/* Mover storeFilterCard para sidebar */
+.sidebar .storeFilterCard{background:#1f2937;border:1px solid #374151;border-radius:10px;padding:8px 10px;margin:0 0 12px}
+.sidebar .storeFilterCard label{color:#9ca3af;font-size:11px}
+.sidebar .storeFilterCard select{background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:6px;width:100%;min-height:36px}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge.green{background:#dcfce7;color:#15803d}
+.badge.red{background:#fee2e2;color:#b91c1c}
+.badge.orange{background:#ffedd5;color:#c2410c}
+.badge.blue{background:#dbeafe;color:#1d4ed8}
+.badge.gray{background:#f1f5f9;color:#475569}
+
+/* KPI cores */
+.kpi-blue .icon{background:#dbeafe;color:#2563eb}
+.kpi-green .icon{background:#dcfce7;color:#15803d}
+.kpi-purple .icon{background:#f3e8ff;color:#7c3aed}
+.kpi-orange .icon{background:#ffedd5;color:#c2410c}
+.kpi-red .icon{background:#fee2e2;color:#b91c1c}
+.kpi .icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.kpi .left{display:flex;align-items:center;gap:14px;width:100%}
+
+/* Filter row */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.filter-row input,.filter-row select{height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+.filter-row .btn{height:36px;white-space:nowrap}
+
+/* DRE */
+.dre-box{font-size:14px}
+.dre-section{margin-bottom:12px;border-radius:10px;padding:12px}
+.dre-section.green{background:#f0fdf4;border:1px solid #bbf7d0}
+.dre-section.red{background:#fef2f2;border:1px solid #fecaca}
+.dre-title{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;color:#374151}
+.dre-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px}
+.dre-total{font-weight:700;margin-top:8px;font-size:14px;padding-top:8px;border-top:2px solid rgba(0,0,0,.1)}
+.dre-resultado{text-align:center;font-size:18px;font-weight:800;padding:14px;border-radius:12px;margin-top:14px}
+.dre-resultado.positive{background:#dcfce7;color:#15803d}
+.dre-resultado.negative{background:#fee2e2;color:#b91c1c}
+.dre-row .green{color:#15803d;font-weight:700}
+.dre-row .red{color:#b91c1c;font-weight:700}
+
+/* Sidebar storeFilter no lugar certo */
+.topbar-center{display:flex;align-items:center}
+.topbar-center .search{background:#1f2937;border:1px solid #374151;border-radius:10px;display:flex;align-items:center;gap:8px;padding:0 12px;width:260px}
+.topbar-center .search input{background:transparent;border:none;color:#e5e7eb;outline:none;height:36px;width:100%;font-size:14px}
+.topbar-center .search input::placeholder{color:#6b7280}
+.topbar-center .search span{color:#6b7280}
+
+/* Full width button */
+.btn.full{width:100%}
+.btnSmall{padding:0 12px;height:32px;font-size:12px}
+
+/* Tabs novos no sidebar */
+.navGroupLabel{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;padding:10px 14px 4px;margin-top:4px}
+

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="/app/manifest.json" />
+  <title>JRS PDV Mobile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/style.css" />
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="vLogin" class="view active">
+  <div class="login-box">
+    <div class="brand"><span class="brand-mark">JRS</span><span class="brand-txt">PDV Mobile</span></div>
+    <p class="brand-sub">Venda · Estoque · Pagamento</p>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username" />
+    <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" />
+    <button class="btn btn-brand btn-block" onclick="doLogin()">Entrar</button>
+    <div id="loginErr" class="err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="vApp" class="view">
+  <header class="topbar">
+    <div class="topbar-store">
+      <select id="storeSel" onchange="onStoreChange()"></select>
+    </div>
+    <button class="icon-btn" onclick="doLogout()" title="Sair">⎋</button>
+  </header>
+
+  <main class="screen">
+
+    <!-- VENDA -->
+    <section id="scVenda" class="tab active">
+      <h1>Nova Venda</h1>
+
+      <div class="field">
+        <label>IMEI do aparelho</label>
+        <div class="imei-row">
+          <input type="text" id="imei" inputmode="numeric" placeholder="Digite ou escaneie" oninput="onImeiInput()" />
+          <button class="icon-btn scan" onclick="scanImei()" title="Escanear">▣</button>
+        </div>
+      </div>
+
+      <div id="prodCard" class="prod-card hidden">
+        <div class="prod-name" id="prodName">—</div>
+        <div class="prod-meta"><span id="prodColor"></span><span id="prodStorage"></span></div>
+        <div class="prod-price" id="prodPrice">R$ 0,00</div>
+      </div>
+      <div id="imeiHint" class="hint">Informe o IMEI para localizar o aparelho no estoque.</div>
+
+      <div class="field">
+        <label>Vendedor</label>
+        <select id="seller"></select>
+      </div>
+
+      <div class="field">
+        <label>Preço de venda</label>
+        <input type="number" id="price" inputmode="decimal" step="0.01" placeholder="0,00" oninput="updateTotal()" />
+      </div>
+
+      <div class="field">
+        <label>Forma de pagamento</label>
+        <div class="pay-grid">
+          <button class="pay-opt active" data-pay="DINHEIRO" onclick="selectPay(this)">💵<span>Dinheiro</span></button>
+          <button class="pay-opt" data-pay="PIX" onclick="selectPay(this)">📱<span>PIX</span></button>
+          <button class="pay-opt" data-pay="CARTAO_CREDITO" onclick="selectPay(this)">💳<span>Crédito</span></button>
+          <button class="pay-opt" data-pay="CARTAO_DEBITO" onclick="selectPay(this)">🏧<span>Débito</span></button>
+        </div>
+      </div>
+
+      <div class="total-bar">
+        <span>Total</span>
+        <strong id="total">R$ 0,00</strong>
+      </div>
+
+      <button class="btn btn-success btn-block btn-lg" id="btnSell" onclick="startSale()">Cobrar e Vender</button>
+    </section>
+
+    <!-- ESTOQUE -->
+    <section id="scEstoque" class="tab">
+      <h1>Estoque</h1>
+      <input type="text" id="stockSearch" placeholder="Buscar produto..." oninput="renderStock()" />
+      <div id="stockList" class="stock-list"></div>
+    </section>
+
+    <!-- VENDAS -->
+    <section id="scVendas" class="tab">
+      <h1>Minhas Vendas</h1>
+      <div id="salesList" class="sales-list"></div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="scVenda" onclick="switchTab(this)">🛒<span>Vender</span></button>
+    <button class="tab-btn" data-tab="scEstoque" onclick="switchTab(this)">📦<span>Estoque</span></button>
+    <button class="tab-btn" data-tab="scVendas" onclick="switchTab(this)">📄<span>Vendas</span></button>
+  </nav>
+</div>
+
+<!-- MODAL PAGAMENTO -->
+<div id="payModal" class="modal hidden">
+  <div class="modal-card">
+    <div id="payBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="/app/app.js"></script>
+</body>
+</html>

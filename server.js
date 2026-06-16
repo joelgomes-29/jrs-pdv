@@ -1037,6 +1037,143 @@ app.get('/api/dashboard', auth, (req, res) => {
   });
 });
 
+// ======================== PAGAMENTOS (Stone / PIX) ========================
+
+// CRC16-CCITT (0xFFFF) para o BR Code PIX
+function crc16(payload) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function emv(id, value) {
+  return id + String(value.length).padStart(2, '0') + value;
+}
+
+// Gera o "copia e cola" PIX (BR Code estático/dinâmico simples)
+function buildPixBRCode({ key, amount, name, city, txid }) {
+  name = (name || 'JRS PDV').substring(0, 25);
+  city = (city || 'RECIFE').substring(0, 15).toUpperCase();
+  txid = (txid || '***').substring(0, 25);
+  const gui = emv('00', 'br.gov.bcb.pix');
+  const chave = emv('01', key);
+  const mai = emv('26', gui + chave);
+  let payload =
+    emv('00', '01') +
+    mai +
+    emv('52', '0000') +
+    emv('53', '986') +
+    (amount ? emv('54', Number(amount).toFixed(2)) : '') +
+    emv('58', 'BR') +
+    emv('59', name) +
+    emv('60', city) +
+    emv('62', emv('05', txid));
+  payload += '6304';
+  return payload + crc16(payload);
+}
+
+app.get('/api/pay/config', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  const configs = db.pay_config || [];
+  if (store_id) return res.json(configs.find(c => c.store_id === Number(store_id)) || null);
+  res.json(configs);
+});
+
+app.post('/api/pay/config', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.pay_config) db.pay_config = [];
+  const { store_id } = req.body;
+  const idx = db.pay_config.findIndex(c => c.store_id === Number(store_id));
+  if (idx >= 0) {
+    db.pay_config[idx] = { ...db.pay_config[idx], ...req.body, updated_at: now() };
+    saveDb(db);
+    return res.json(db.pay_config[idx]);
+  }
+  const cfg = { id: nextId(db.pay_config), created_at: now(), ...req.body };
+  db.pay_config.push(cfg);
+  saveDb(db);
+  res.json(cfg);
+});
+
+// Cria a cobrança. PIX => gera BR Code. (Integração Stone real entra aqui via API/webhook.)
+app.post('/api/pay/intent', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.payments) db.payments = [];
+  const { store_id, amount, payment_method } = req.body;
+  const cfg = (db.pay_config || []).find(c => c.store_id === Number(store_id)) || {};
+  const store = db.stores.find(s => s.id === Number(store_id)) || {};
+
+  const payment = {
+    id: nextId(db.payments),
+    store_id: Number(store_id),
+    amount: Number(amount || 0),
+    payment_method: payment_method || 'PIX',
+    status: 'PENDING',
+    provider: cfg.stone_token ? 'STONE' : 'MANUAL',
+    created_at: now(),
+  };
+
+  if (payment_method === 'PIX') {
+    if (!cfg.pix_key) {
+      return res.status(400).json({ error: 'Chave PIX não configurada para esta loja' });
+    }
+    payment.brcode = buildPixBRCode({
+      key: cfg.pix_key,
+      amount: payment.amount,
+      name: cfg.merchant_name || store.name,
+      city: cfg.merchant_city || store.cidade,
+      txid: 'JRS' + payment.id,
+    });
+  }
+
+  // PONTO DE INTEGRAÇÃO STONE: se cfg.stone_token existir, criar cobrança via API Stone
+  // e usar o QR/brcode retornado por eles; o webhook Stone chamaria /api/pay/webhook.
+
+  db.payments.push(payment);
+  saveDb(db);
+  res.json(payment);
+});
+
+app.get('/api/pay/status/:id', auth, (req, res) => {
+  const db = loadDb();
+  const p = (db.payments || []).find(x => x.id === Number(req.params.id));
+  if (!p) return res.status(404).json({ error: 'Pagamento não encontrado' });
+  res.json({ id: p.id, status: p.status });
+});
+
+app.post('/api/pay/confirm/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = (db.payments || []).findIndex(x => x.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Pagamento não encontrado' });
+  db.payments[idx].status = 'PAID';
+  db.payments[idx].paid_at = now();
+  saveDb(db);
+  broadcast('payment_paid', { id: db.payments[idx].id });
+  res.json(db.payments[idx]);
+});
+
+// Webhook Stone (sem auth — validar assinatura na integração real)
+app.post('/api/pay/webhook', (req, res) => {
+  const db = loadDb();
+  const { txid, status } = req.body || {};
+  const id = txid ? Number(String(txid).replace('JRS', '')) : null;
+  const idx = (db.payments || []).findIndex(x => x.id === id);
+  if (idx >= 0 && (status === 'paid' || status === 'PAID' || status === 'approved')) {
+    db.payments[idx].status = 'PAID';
+    db.payments[idx].paid_at = now();
+    saveDb(db);
+    broadcast('payment_paid', { id });
+  }
+  res.json({ ok: true });
+});
+
 // ======================== SSE ========================
 
 app.get('/api/events', auth, (req, res) => {

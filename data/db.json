@@ -1,64 +1,459 @@
 {
   "stores": [
-    {"id":1,"name":"REALME GUARARAPES","cnpj":"","ie":"","endereco":"","cidade":"Recife","uf":"PE","cep":"","fone":"","active":1},
-    {"id":2,"name":"REALME RECIFE","cnpj":"","ie":"","endereco":"","cidade":"Recife","uf":"PE","cep":"","fone":"","active":1},
-    {"id":3,"name":"REALME RIO MAR","cnpj":"","ie":"","endereco":"","cidade":"Recife","uf":"PE","cep":"","fone":"","active":1},
-    {"id":4,"name":"REALME BOA VISTA","cnpj":"","ie":"","endereco":"","cidade":"Recife","uf":"PE","cep":"","fone":"","active":1},
-    {"id":5,"name":"REALME TACARUNA","cnpj":"","ie":"","endereco":"","cidade":"Recife","uf":"PE","cep":"","fone":"","active":1},
-    {"id":6,"name":"REALME PATTEO","cnpj":"","ie":"","endereco":"","cidade":"Recife","uf":"PE","cep":"","fone":"","active":1},
-    {"id":7,"name":"REALME PAULISTA","cnpj":"","ie":"","endereco":"","cidade":"Paulista","uf":"PE","cep":"","fone":"","active":1},
-    {"id":8,"name":"REALME CARUARU","cnpj":"","ie":"","endereco":"","cidade":"Caruaru","uf":"PE","cep":"","fone":"","active":1},
-    {"id":9,"name":"REALME DIFUSORA","cnpj":"","ie":"","endereco":"","cidade":"Recife","uf":"PE","cep":"","fone":"","active":1},
-    {"id":10,"name":"REALME TAMANDARE","cnpj":"","ie":"","endereco":"","cidade":"Tamandaré","uf":"PE","cep":"","fone":"","active":1},
-    {"id":11,"name":"REALME RIO FORMOSO","cnpj":"","ie":"","endereco":"","cidade":"Rio Formoso","uf":"PE","cep":"","fone":"","active":1}
+    {
+      "id": 1,
+      "name": "REALME GUARARAPES",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Recife",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 2,
+      "name": "REALME RECIFE",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Recife",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 3,
+      "name": "REALME RIO MAR",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Recife",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 4,
+      "name": "REALME BOA VISTA",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Recife",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 5,
+      "name": "REALME TACARUNA",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Recife",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 6,
+      "name": "REALME PATTEO",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Recife",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 7,
+      "name": "REALME PAULISTA",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Paulista",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 8,
+      "name": "REALME CARUARU",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Caruaru",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 9,
+      "name": "REALME DIFUSORA",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Recife",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 10,
+      "name": "REALME TAMANDARE",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Tamandaré",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    },
+    {
+      "id": 11,
+      "name": "REALME RIO FORMOSO",
+      "cnpj": "",
+      "ie": "",
+      "endereco": "",
+      "cidade": "Rio Formoso",
+      "uf": "PE",
+      "cep": "",
+      "fone": "",
+      "active": 1
+    }
   ],
   "products": [
-    {"id":1,"name":"Note 70","price":1099,"cost_price":820,"barcode":"7891000000001","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":2,"name":"C71","price":1549,"cost_price":1180,"barcode":"7891000000002","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":3,"name":"REALME C75","price":1799,"cost_price":1380,"barcode":"7891000000003","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":4,"name":"REALME C75 5G","price":1999,"cost_price":1550,"barcode":"7891000000004","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":5,"name":"REALME C85","price":2099,"cost_price":1620,"barcode":"7891000000005","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":6,"name":"REALME 12","price":2199,"cost_price":1700,"barcode":"7891000000006","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":7,"name":"REALME 12 Pro","price":3699,"cost_price":2900,"barcode":"7891000000007","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":8,"name":"REALME 14t","price":2599,"cost_price":2000,"barcode":"7891000000008","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":9,"name":"REALME 14 Pro","price":4199,"cost_price":3300,"barcode":"7891000000009","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":10,"name":"REALME 15 5G","price":3699,"cost_price":2900,"barcode":"7891000000010","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":11,"name":"REALME 15 Pro","price":4999,"cost_price":3900,"barcode":"7891000000011","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":12,"name":"REALME GT 7","price":5099,"cost_price":4000,"barcode":"7891000000012","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1},
-    {"id":13,"name":"REALME 15 PRO GOT","price":5999,"cost_price":4700,"barcode":"7891000000013","ncm":"8517120000","category":"Smartphones","unit":"UN","cfop":"5102","active":1}
+    {
+      "id": 1,
+      "name": "Note 70",
+      "price": 1099,
+      "cost_price": 820,
+      "barcode": "7891000000001",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 2,
+      "name": "C71",
+      "price": 1549,
+      "cost_price": 1180,
+      "barcode": "7891000000002",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 3,
+      "name": "REALME C75",
+      "price": 1799,
+      "cost_price": 1380,
+      "barcode": "7891000000003",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 4,
+      "name": "REALME C75 5G",
+      "price": 1999,
+      "cost_price": 1550,
+      "barcode": "7891000000004",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 5,
+      "name": "REALME C85",
+      "price": 2099,
+      "cost_price": 1620,
+      "barcode": "7891000000005",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 6,
+      "name": "REALME 12",
+      "price": 2199,
+      "cost_price": 1700,
+      "barcode": "7891000000006",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 7,
+      "name": "REALME 12 Pro",
+      "price": 3699,
+      "cost_price": 2900,
+      "barcode": "7891000000007",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 8,
+      "name": "REALME 14t",
+      "price": 2599,
+      "cost_price": 2000,
+      "barcode": "7891000000008",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 9,
+      "name": "REALME 14 Pro",
+      "price": 4199,
+      "cost_price": 3300,
+      "barcode": "7891000000009",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 10,
+      "name": "REALME 15 5G",
+      "price": 3699,
+      "cost_price": 2900,
+      "barcode": "7891000000010",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 11,
+      "name": "REALME 15 Pro",
+      "price": 4999,
+      "cost_price": 3900,
+      "barcode": "7891000000011",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 12,
+      "name": "REALME GT 7",
+      "price": 5099,
+      "cost_price": 4000,
+      "barcode": "7891000000012",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    },
+    {
+      "id": 13,
+      "name": "REALME 15 PRO GOT",
+      "price": 5999,
+      "cost_price": 4700,
+      "barcode": "7891000000013",
+      "ncm": "8517120000",
+      "category": "Smartphones",
+      "unit": "UN",
+      "cfop": "5102",
+      "active": 1
+    }
   ],
   "suppliers": [
-    {"id":1,"name":"REALME DO BRASIL","cnpj":"12345678000100","ie":"","email":"","fone":"","endereco":"","cidade":"São Paulo","uf":"SP","active":1,"created_at":"2026-01-01 00:00:00"}
+    {
+      "id": 1,
+      "name": "REALME DO BRASIL",
+      "cnpj": "12345678000100",
+      "ie": "",
+      "email": "",
+      "fone": "",
+      "endereco": "",
+      "cidade": "São Paulo",
+      "uf": "SP",
+      "active": 1,
+      "created_at": "2026-01-01 00:00:00"
+    }
   ],
   "users": [
-    {"id":1,"name":"Administrador","username":"admin","password":"123456","role":"ADMIN","active":1}
+    {
+      "id": 1,
+      "name": "Administrador",
+      "username": "admin",
+      "password": "123456",
+      "role": "ADMIN",
+      "active": 1
+    }
   ],
   "sellers": [
-    {"id":1,"store_id":1,"name":"Vendedor GUARARAPES A","active":1},
-    {"id":2,"store_id":1,"name":"Vendedor GUARARAPES B","active":1},
-    {"id":3,"store_id":2,"name":"Vendedor RECIFE A","active":1},
-    {"id":4,"store_id":2,"name":"Vendedor RECIFE B","active":1},
-    {"id":5,"store_id":3,"name":"Vendedor MAR A","active":1},
-    {"id":6,"store_id":3,"name":"Vendedor MAR B","active":1},
-    {"id":7,"store_id":4,"name":"Vendedor VISTA A","active":1},
-    {"id":8,"store_id":4,"name":"Vendedor VISTA B","active":1},
-    {"id":9,"store_id":5,"name":"Vendedor TACARUNA A","active":1},
-    {"id":10,"store_id":5,"name":"Vendedor TACARUNA B","active":1},
-    {"id":11,"store_id":6,"name":"Vendedor PATTEO A","active":1},
-    {"id":12,"store_id":6,"name":"Vendedor PATTEO B","active":1},
-    {"id":13,"store_id":7,"name":"Vendedor PAULISTA A","active":1},
-    {"id":14,"store_id":7,"name":"Vendedor PAULISTA B","active":1},
-    {"id":15,"store_id":8,"name":"Vendedor CARUARU A","active":1},
-    {"id":16,"store_id":8,"name":"Vendedor CARUARU B","active":1},
-    {"id":17,"store_id":9,"name":"Vendedor DIFUSORA A","active":1},
-    {"id":18,"store_id":9,"name":"Vendedor DIFUSORA B","active":1},
-    {"id":19,"store_id":10,"name":"Vendedor TAMANDARE A","active":1},
-    {"id":20,"store_id":10,"name":"Vendedor TAMANDARE B","active":1},
-    {"id":21,"store_id":11,"name":"Vendedor FORMOSO A","active":1},
-    {"id":22,"store_id":11,"name":"Vendedor FORMOSO B","active":1}
+    {
+      "id": 1,
+      "store_id": 1,
+      "name": "Vendedor GUARARAPES A",
+      "active": 1
+    },
+    {
+      "id": 2,
+      "store_id": 1,
+      "name": "Vendedor GUARARAPES B",
+      "active": 1
+    },
+    {
+      "id": 3,
+      "store_id": 2,
+      "name": "Vendedor RECIFE A",
+      "active": 1
+    },
+    {
+      "id": 4,
+      "store_id": 2,
+      "name": "Vendedor RECIFE B",
+      "active": 1
+    },
+    {
+      "id": 5,
+      "store_id": 3,
+      "name": "Vendedor MAR A",
+      "active": 1
+    },
+    {
+      "id": 6,
+      "store_id": 3,
+      "name": "Vendedor MAR B",
+      "active": 1
+    },
+    {
+      "id": 7,
+      "store_id": 4,
+      "name": "Vendedor VISTA A",
+      "active": 1
+    },
+    {
+      "id": 8,
+      "store_id": 4,
+      "name": "Vendedor VISTA B",
+      "active": 1
+    },
+    {
+      "id": 9,
+      "store_id": 5,
+      "name": "Vendedor TACARUNA A",
+      "active": 1
+    },
+    {
+      "id": 10,
+      "store_id": 5,
+      "name": "Vendedor TACARUNA B",
+      "active": 1
+    },
+    {
+      "id": 11,
+      "store_id": 6,
+      "name": "Vendedor PATTEO A",
+      "active": 1
+    },
+    {
+      "id": 12,
+      "store_id": 6,
+      "name": "Vendedor PATTEO B",
+      "active": 1
+    },
+    {
+      "id": 13,
+      "store_id": 7,
+      "name": "Vendedor PAULISTA A",
+      "active": 1
+    },
+    {
+      "id": 14,
+      "store_id": 7,
+      "name": "Vendedor PAULISTA B",
+      "active": 1
+    },
+    {
+      "id": 15,
+      "store_id": 8,
+      "name": "Vendedor CARUARU A",
+      "active": 1
+    },
+    {
+      "id": 16,
+      "store_id": 8,
+      "name": "Vendedor CARUARU B",
+      "active": 1
+    },
+    {
+      "id": 17,
+      "store_id": 9,
+      "name": "Vendedor DIFUSORA A",
+      "active": 1
+    },
+    {
+      "id": 18,
+      "store_id": 9,
+      "name": "Vendedor DIFUSORA B",
+      "active": 1
+    },
+    {
+      "id": 19,
+      "store_id": 10,
+      "name": "Vendedor TAMANDARE A",
+      "active": 1
+    },
+    {
+      "id": 20,
+      "store_id": 10,
+      "name": "Vendedor TAMANDARE B",
+      "active": 1
+    },
+    {
+      "id": 21,
+      "store_id": 11,
+      "name": "Vendedor FORMOSO A",
+      "active": 1
+    },
+    {
+      "id": 22,
+      "store_id": 11,
+      "name": "Vendedor FORMOSO B",
+      "active": 1
+    }
   ],
   "nfe_config": [],
   "nfe_emitidas": [],
+  "pay_config": [],
+  "payments": [],
   "imei_units": [],
   "stock_movements": [],
   "note_entries": [],
@@ -67,18 +462,78 @@
   "service_moves": [],
   "finance_entries": [],
   "finance_categories": [
-    {"id":1,"type":"INCOME","name":"Venda de aparelho","active":1},
-    {"id":2,"type":"INCOME","name":"Serviço de assistência","active":1},
-    {"id":3,"type":"INCOME","name":"Acessório","active":1},
-    {"id":4,"type":"INCOME","name":"Outros","active":1},
-    {"id":5,"type":"EXPENSE","name":"Aluguel","active":1},
-    {"id":6,"type":"EXPENSE","name":"Energia elétrica","active":1},
-    {"id":7,"type":"EXPENSE","name":"Salários","active":1},
-    {"id":8,"type":"EXPENSE","name":"Comissões","active":1},
-    {"id":9,"type":"EXPENSE","name":"Fornecedor","active":1},
-    {"id":10,"type":"EXPENSE","name":"Taxa cartão","active":1},
-    {"id":11,"type":"EXPENSE","name":"Marketing","active":1},
-    {"id":12,"type":"EXPENSE","name":"Outros","active":1}
+    {
+      "id": 1,
+      "type": "INCOME",
+      "name": "Venda de aparelho",
+      "active": 1
+    },
+    {
+      "id": 2,
+      "type": "INCOME",
+      "name": "Serviço de assistência",
+      "active": 1
+    },
+    {
+      "id": 3,
+      "type": "INCOME",
+      "name": "Acessório",
+      "active": 1
+    },
+    {
+      "id": 4,
+      "type": "INCOME",
+      "name": "Outros",
+      "active": 1
+    },
+    {
+      "id": 5,
+      "type": "EXPENSE",
+      "name": "Aluguel",
+      "active": 1
+    },
+    {
+      "id": 6,
+      "type": "EXPENSE",
+      "name": "Energia elétrica",
+      "active": 1
+    },
+    {
+      "id": 7,
+      "type": "EXPENSE",
+      "name": "Salários",
+      "active": 1
+    },
+    {
+      "id": 8,
+      "type": "EXPENSE",
+      "name": "Comissões",
+      "active": 1
+    },
+    {
+      "id": 9,
+      "type": "EXPENSE",
+      "name": "Fornecedor",
+      "active": 1
+    },
+    {
+      "id": 10,
+      "type": "EXPENSE",
+      "name": "Taxa cartão",
+      "active": 1
+    },
+    {
+      "id": 11,
+      "type": "EXPENSE",
+      "name": "Marketing",
+      "active": 1
+    },
+    {
+      "id": 12,
+      "type": "EXPENSE",
+      "name": "Outros",
+      "active": 1
+    }
   ],
   "contas_pagar": [],
   "contas_receber": [],

@@ -169,8 +169,54 @@ function startSale() {
 
 function closeModal() { $('payModal').classList.add('hidden'); $('payBody').innerHTML = ''; }
 
+// Ponte nativa (app Android + maquininha Stone). No navegador comum não existe.
+const hasMaquininha = () => !!(window.AndroidStone && window.AndroidStone.isAvailable && window.AndroidStone.isAvailable());
+
+window.__stoneCbs = {};
+window.onStonePaymentResult = function (cbId, ok, msg) {
+  const cb = window.__stoneCbs[cbId];
+  if (cb) { delete window.__stoneCbs[cbId]; cb(ok === true || ok === 'true', msg); }
+};
+
+function nativeCardPay(price) {
+  return new Promise(resolve => {
+    const cbId = 'cb' + Date.now();
+    window.__stoneCbs[cbId] = (ok, msg) => resolve({ ok, msg });
+    const cents = Math.round(Number(price) * 100);
+    const type = S.pay === 'CARTAO_DEBITO' ? 'DEBIT' : 'CREDIT';
+    try { window.AndroidStone.payCard(cents, type, 1, cbId); }
+    catch (e) { resolve({ ok: false, msg: e.message }); }
+  });
+}
+
+const isCard = () => S.pay === 'CARTAO_CREDITO' || S.pay === 'CARTAO_DEBITO';
+
 function openConfirmModal(price) {
   const labels = { DINHEIRO: 'Dinheiro', CARTAO_CREDITO: 'Cartão de Crédito', CARTAO_DEBITO: 'Cartão de Débito' };
+
+  // Maquininha física disponível e pagamento no cartão -> processa na Stone
+  if (isCard() && hasMaquininha()) {
+    $('payBody').innerHTML = `
+      <div class="pay-title">${labels[S.pay]}</div>
+      <div class="pay-amount">${fmt(price)}</div>
+      <p class="pay-spinner">Aproxime, insira ou passe o cartão na maquininha...</p>`;
+    $('payModal').classList.remove('hidden');
+    nativeCardPay(price).then(r => {
+      if (r.ok) { finishSale(); }
+      else {
+        $('payBody').innerHTML = `
+          <div class="pay-title">Pagamento não concluído</div>
+          <p class="pay-spinner">${r.msg || 'Cartão não autorizado.'}</p>
+          <div class="modal-actions">
+            <button class="btn btn-success btn-lg" onclick="openConfirmModal(${price})">Tentar novamente</button>
+            <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+          </div>`;
+      }
+    });
+    return;
+  }
+
+  // Navegador / sem maquininha -> confirmação manual
   $('payBody').innerHTML = `
     <div class="pay-title">${labels[S.pay] || S.pay}</div>
     <div class="pay-amount">${fmt(price)}</div>

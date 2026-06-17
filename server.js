@@ -1037,6 +1037,55 @@ app.get('/api/dashboard', auth, (req, res) => {
   });
 });
 
+// ======================== CADASTROS GENÉRICOS (espelho RAJ) ========================
+
+// Coleções simples liberadas para CRUD genérico (Cadastrar/Consultar como no RAJ)
+const GENERIC_COLLECTIONS = [
+  'bancos', 'contas_correntes', 'bandeiras_cartao', 'formas_pagamento',
+  'grupos_produto', 'subgrupos_produto', 'unidades_medida',
+  'tipos_operacao', 'series_nota', 'cfops', 'regionais', 'metas_lojas',
+];
+
+app.get('/api/coll/:name', auth, (req, res) => {
+  const name = req.params.name;
+  if (!GENERIC_COLLECTIONS.includes(name)) return res.status(400).json({ error: 'Coleção inválida' });
+  const db = loadDb();
+  res.json((db[name] || []).filter(x => x.active !== 0));
+});
+
+app.post('/api/coll/:name', auth, (req, res) => {
+  const name = req.params.name;
+  if (!GENERIC_COLLECTIONS.includes(name)) return res.status(400).json({ error: 'Coleção inválida' });
+  const db = loadDb();
+  if (!db[name]) db[name] = [];
+  const item = { id: nextId(db[name]), active: 1, created_at: now(), ...req.body };
+  db[name].push(item);
+  saveDb(db);
+  res.json(item);
+});
+
+app.put('/api/coll/:name/:id', auth, (req, res) => {
+  const name = req.params.name;
+  if (!GENERIC_COLLECTIONS.includes(name)) return res.status(400).json({ error: 'Coleção inválida' });
+  const db = loadDb();
+  const idx = (db[name] || []).findIndex(x => x.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Registro não encontrado' });
+  db[name][idx] = { ...db[name][idx], ...req.body, id: db[name][idx].id };
+  saveDb(db);
+  res.json(db[name][idx]);
+});
+
+app.delete('/api/coll/:name/:id', auth, (req, res) => {
+  const name = req.params.name;
+  if (!GENERIC_COLLECTIONS.includes(name)) return res.status(400).json({ error: 'Coleção inválida' });
+  const db = loadDb();
+  const idx = (db[name] || []).findIndex(x => x.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Registro não encontrado' });
+  db[name][idx].active = 0;
+  saveDb(db);
+  res.json({ ok: true });
+});
+
 // ======================== PAGAMENTOS (Stone / PIX) ========================
 
 // CRC16-CCITT (0xFFFF) para o BR Code PIX

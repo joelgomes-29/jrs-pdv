@@ -540,5 +540,17 @@
   "cash_registers": [],
   "transfers": [],
   "customers": [],
-  "employees": []
+  "employees": [],
+  "bancos": [],
+  "contas_correntes": [],
+  "bandeiras_cartao": [],
+  "formas_pagamento": [],
+  "grupos_produto": [],
+  "subgrupos_produto": [],
+  "unidades_medida": [],
+  "tipos_operacao": [],
+  "series_nota": [],
+  "cfops": [],
+  "regionais": [],
+  "metas_lojas": []
 }

@@ -148,6 +148,18 @@ function navigateTo(section) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
+  // Cadastros genéricos (espelho RAJ): cad:<colecao>
+  if (section.startsWith('cad:')) {
+    const name = section.slice(4);
+    $('sec-cadastro').classList.add('active');
+    const navG = document.querySelector(`[data-section="${section}"]`);
+    if (navG) navG.classList.add('active');
+    state.currentSection = section;
+    $('topbarTitle').textContent = (CAD[name] && CAD[name].title) || 'Cadastro';
+    openCadastro(name);
+    return;
+  }
+
   const sec = $('sec-' + section);
   if (sec) sec.classList.add('active');
 
@@ -1333,6 +1345,162 @@ async function loadReportStore() {
       data.map(r => [r.store_name, r.qty, fmt(r.total)])
     );
   } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+// ==================== CADASTROS GENÉRICOS (espelho RAJ) ====================
+
+const CAD = {
+  bancos: { title: 'Banco', fields: [
+    { k: 'codigo', l: 'Código', t: 'text' },
+    { k: 'name', l: 'Nome do Banco', t: 'text' },
+  ] },
+  contas_correntes: { title: 'Conta Corrente', fields: [
+    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'banco', l: 'Banco', t: 'text' },
+    { k: 'agencia', l: 'Agência', t: 'text' },
+    { k: 'conta', l: 'Conta', t: 'text' },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+  ] },
+  bandeiras_cartao: { title: 'Bandeira de Cartão', fields: [
+    { k: 'name', l: 'Bandeira', t: 'text' },
+    { k: 'taxa_credito', l: 'Taxa Crédito (%)', t: 'number' },
+    { k: 'taxa_debito', l: 'Taxa Débito (%)', t: 'number' },
+  ] },
+  formas_pagamento: { title: 'Forma de Pagamento', fields: [
+    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'tipo', l: 'Tipo', t: 'select', o: ['DINHEIRO', 'PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'CREDIARIO', 'BOLETO'] },
+  ] },
+  grupos_produto: { title: 'Grupo de Produto', fields: [
+    { k: 'name', l: 'Grupo', t: 'text' },
+  ] },
+  subgrupos_produto: { title: 'SubGrupo de Produto', fields: [
+    { k: 'name', l: 'SubGrupo', t: 'text' },
+    { k: 'grupo', l: 'Grupo', t: 'text' },
+  ] },
+  unidades_medida: { title: 'Unidade de Medida', fields: [
+    { k: 'sigla', l: 'Sigla', t: 'text' },
+    { k: 'name', l: 'Descrição', t: 'text' },
+  ] },
+  tipos_operacao: { title: 'Tipo de Operação', fields: [
+    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'cfop', l: 'CFOP padrão', t: 'text' },
+  ] },
+  series_nota: { title: 'Série de Nota', fields: [
+    { k: 'serie', l: 'Série', t: 'text' },
+    { k: 'modelo', l: 'Modelo (55=NF-e, 65=NFC-e)', t: 'text' },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+  ] },
+  cfops: { title: 'CFOP', fields: [
+    { k: 'codigo', l: 'CFOP', t: 'text' },
+    { k: 'name', l: 'Descrição', t: 'text' },
+  ] },
+  regionais: { title: 'Regional', fields: [
+    { k: 'name', l: 'Regional', t: 'text' },
+  ] },
+  metas_lojas: { title: 'Meta de Loja', fields: [
+    { k: 'store_id', l: 'Loja', t: 'store' },
+    { k: 'mes', l: 'Mês (AAAA-MM)', t: 'text' },
+    { k: 'meta_valor', l: 'Meta (R$)', t: 'number' },
+  ] },
+};
+
+function storeName(id) { return (state.stores.find(s => s.id === Number(id)) || {}).name || id; }
+
+async function openCadastro(name) {
+  const cfg = CAD[name];
+  if (!cfg) return;
+  state.cadName = name;
+  $('cadTitle').textContent = cfg.title;
+  $('cadListTitle').textContent = cfg.title + ' — Registros';
+  cadHideForm();
+  await cadLoad();
+}
+
+function cadFieldHtml(f, val) {
+  const v = val === undefined || val === null ? '' : val;
+  if (f.t === 'select') {
+    return `<div class="form-group"><label>${f.l}</label><select id="cad_${f.k}">
+      <option value="">Selecione...</option>
+      ${f.o.map(o => `<option value="${o}" ${String(v) === o ? 'selected' : ''}>${o}</option>`).join('')}
+    </select></div>`;
+  }
+  if (f.t === 'store') {
+    return `<div class="form-group"><label>${f.l}</label><select id="cad_${f.k}">
+      <option value="">Selecione...</option>
+      ${state.stores.map(s => `<option value="${s.id}" ${Number(v) === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+    </select></div>`;
+  }
+  const type = f.t === 'number' ? 'number' : 'text';
+  const step = f.t === 'number' ? 'step="0.01"' : '';
+  return `<div class="form-group"><label>${f.l}</label><input type="${type}" ${step} id="cad_${f.k}" value="${v}" /></div>`;
+}
+
+function cadShowForm(item) {
+  const cfg = CAD[state.cadName];
+  $('cadId').value = item ? item.id : '';
+  $('cadFormTitle').textContent = (item ? 'Editar ' : 'Novo ') + cfg.title;
+  $('cadFormFields').innerHTML = cfg.fields.map(f => cadFieldHtml(f, item ? item[f.k] : '')).join('');
+  $('cadFormWrap').classList.remove('hidden');
+}
+
+function cadHideForm() { $('cadFormWrap').classList.add('hidden'); }
+
+async function cadSubmit() {
+  const cfg = CAD[state.cadName];
+  const id = $('cadId').value;
+  const payload = {};
+  for (const f of cfg.fields) {
+    const el = $('cad_' + f.k);
+    if (!el) continue;
+    let v = el.value;
+    if (f.t === 'number') v = Number(v || 0);
+    if (f.t === 'store') v = v ? Number(v) : null;
+    payload[f.k] = v;
+  }
+  if (cfg.fields[0] && !payload[cfg.fields[0].k] && cfg.fields[0].t !== 'store') {
+    return showToast('Preencha ' + cfg.fields[0].l, 'error');
+  }
+  try {
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/coll/${state.cadName}/${id}` : `/api/coll/${state.cadName}`;
+    await api(method, url, payload);
+    showToast(cfg.title + ' salvo!');
+    cadHideForm();
+    cadLoad();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function cadLoad() {
+  const cfg = CAD[state.cadName];
+  try {
+    const rows = await api('GET', `/api/coll/${state.cadName}`);
+    state.cadList = rows;
+    const headers = cfg.fields.map(f => f.l).concat(['Ações']);
+    $('cadTable').innerHTML = makeTable(headers, rows.map(r => {
+      const cells = cfg.fields.map(f => {
+        let v = r[f.k];
+        if (f.t === 'store') v = v ? storeName(v) : '—';
+        return v === undefined || v === null || v === '' ? '—' : v;
+      });
+      cells.push(`<button class="btn btnGhost btn-sm" onclick="cadEdit(${r.id})">Editar</button>
+        <button class="btn btnGhost btn-sm" onclick="cadDelete(${r.id})">Excluir</button>`);
+      return cells;
+    }));
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function cadEdit(id) {
+  const item = (state.cadList || []).find(x => x.id === id);
+  if (item) cadShowForm(item);
+}
+
+async function cadDelete(id) {
+  if (!confirm('Excluir este registro?')) return;
+  try {
+    await api('DELETE', `/api/coll/${state.cadName}/${id}`);
+    showToast('Excluído');
+    cadLoad();
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
 // ==================== BOOT ====================

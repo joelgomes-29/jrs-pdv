@@ -1037,6 +1037,193 @@ app.get('/api/dashboard', auth, (req, res) => {
   });
 });
 
+// ======================== PEDIDOS ========================
+
+app.get('/api/pedidos', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, status } = req.query;
+  let items = db.pedidos || [];
+  if (store_id) items = items.filter(p => p.store_id === Number(store_id));
+  if (status) items = items.filter(p => p.status === status);
+  res.json(items);
+});
+
+app.post('/api/pedidos', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.pedidos) db.pedidos = [];
+  const { store_id, customer_id, seller_id, items, total_value, tipo, notes } = req.body;
+  const pedido = {
+    id: nextId(db.pedidos),
+    store_id: Number(store_id),
+    customer_id: customer_id ? Number(customer_id) : null,
+    seller_id: seller_id ? Number(seller_id) : null,
+    items: items || [],
+    total_value: Number(total_value || 0),
+    tipo: tipo || 'NFCE',
+    notes: notes || '',
+    status: 'PENDENTE',
+    created_at: now(),
+  };
+  db.pedidos.push(pedido);
+  saveDb(db);
+  broadcast('pedido_novo', { pedido });
+  res.json(pedido);
+});
+
+// Aprovar / reprovar / faturar pedido
+app.patch('/api/pedidos/:id', auth, (req, res) => {
+  const db = loadDb();
+  const idx = (db.pedidos || []).findIndex(p => p.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Pedido não encontrado' });
+  const { status } = req.body;
+  const pedido = db.pedidos[idx];
+
+  if (status === 'FATURADO' && pedido.status !== 'FATURADO') {
+    // ao faturar, lança receita e contas a receber
+    if (!db.finance_entries) db.finance_entries = [];
+    db.finance_entries.push({
+      id: nextId(db.finance_entries), type: 'INCOME', category_id: 1,
+      description: `Faturamento Pedido #${pedido.id}`, value: pedido.total_value,
+      store_id: pedido.store_id, pedido_id: pedido.id,
+      date: now().substring(0, 10), created_at: now(),
+    });
+    pedido.faturado_at = now();
+  }
+  pedido.status = status || pedido.status;
+  if (req.body.aprovacao_financeiro !== undefined) pedido.aprovacao_financeiro = req.body.aprovacao_financeiro;
+  saveDb(db);
+  res.json(pedido);
+});
+
+// ======================== CAIXA (abertura/sangria/suprimento/fechamento) ========================
+
+app.get('/api/caixa', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id } = req.query;
+  let regs = db.cash_registers || [];
+  if (store_id) regs = regs.filter(c => c.store_id === Number(store_id));
+  res.json(regs);
+});
+
+app.post('/api/caixa/sangria', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, amount, motivo } = req.body;
+  const open = (db.cash_registers || []).find(c => c.store_id === Number(store_id) && c.status === 'OPEN');
+  if (!open) return res.status(400).json({ error: 'Caixa não aberto nesta loja' });
+  if (!open.movements) open.movements = [];
+  open.movements.push({ type: 'SANGRIA', amount: Number(amount || 0), motivo: motivo || '', at: now() });
+  // lança despesa
+  if (!db.finance_entries) db.finance_entries = [];
+  db.finance_entries.push({
+    id: nextId(db.finance_entries), type: 'EXPENSE', category_id: 12,
+    description: `Sangria de caixa${motivo ? ' - ' + motivo : ''}`, value: Number(amount || 0),
+    store_id: Number(store_id), date: now().substring(0, 10), created_at: now(),
+  });
+  saveDb(db);
+  res.json(open);
+});
+
+app.post('/api/caixa/suprimento', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, amount, motivo } = req.body;
+  const open = (db.cash_registers || []).find(c => c.store_id === Number(store_id) && c.status === 'OPEN');
+  if (!open) return res.status(400).json({ error: 'Caixa não aberto nesta loja' });
+  if (!open.movements) open.movements = [];
+  open.movements.push({ type: 'SUPRIMENTO', amount: Number(amount || 0), motivo: motivo || '', at: now() });
+  saveDb(db);
+  res.json(open);
+});
+
+// ======================== FLUXO DE CAIXA ========================
+
+app.get('/api/fluxo-caixa', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, start, end } = req.query;
+  let entries = db.finance_entries || [];
+  if (store_id) entries = entries.filter(e => e.store_id === Number(store_id));
+  if (start) entries = entries.filter(e => e.date >= start);
+  if (end) entries = entries.filter(e => e.date <= end);
+  // agrupa por dia
+  const byDay = {};
+  for (const e of entries) {
+    const day = e.date;
+    if (!byDay[day]) byDay[day] = { date: day, income: 0, expense: 0 };
+    if (e.type === 'INCOME') byDay[day].income += e.value; else byDay[day].expense += e.value;
+  }
+  const days = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date));
+  let saldo = 0;
+  for (const d of days) { d.saldo_dia = d.income - d.expense; saldo += d.saldo_dia; d.saldo_acumulado = saldo; }
+  res.json(days);
+});
+
+// ======================== INVENTÁRIO ========================
+
+app.post('/api/inventario', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.inventarios) db.inventarios = [];
+  const { store_id, product_id, contagem, observacao } = req.body;
+  const units = (db.imei_units || []).filter(u => u.product_id === Number(product_id) && u.store_id === Number(store_id) && u.status === 'AVAILABLE');
+  const sistema = units.length;
+  const inv = {
+    id: nextId(db.inventarios),
+    store_id: Number(store_id), product_id: Number(product_id),
+    sistema, contagem: Number(contagem || 0),
+    divergencia: Number(contagem || 0) - sistema,
+    observacao: observacao || '', created_at: now(),
+  };
+  db.inventarios.push(inv);
+  saveDb(db);
+  res.json(inv);
+});
+
+app.get('/api/inventario', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.inventarios || []);
+});
+
+// ======================== SAÍDA DE MATERIAL / PRODUTO DEFEITO ========================
+
+app.post('/api/saida-material', auth, (req, res) => {
+  const db = loadDb();
+  const { imei, motivo, tipo } = req.body; // tipo: DEFEITO | SAIDA
+  const unit = (db.imei_units || []).find(u => u.imei === imei && u.status === 'AVAILABLE');
+  if (!unit) return res.status(400).json({ error: 'IMEI não disponível' });
+  unit.status = tipo === 'DEFEITO' ? 'DEFECTIVE' : 'OUT';
+  unit.saida_motivo = motivo || '';
+  unit.saida_at = now();
+  if (!db.stock_movements) db.stock_movements = [];
+  db.stock_movements.push({ id: nextId(db.stock_movements), imei, type: tipo || 'SAIDA', motivo: motivo || '', store_id: unit.store_id, created_at: now() });
+  saveDb(db);
+  broadcast('stock_updated', { store_id: unit.store_id });
+  res.json({ ok: true, unit });
+});
+
+app.get('/api/produtos-defeito', auth, (req, res) => {
+  const db = loadDb();
+  res.json((db.imei_units || []).filter(u => u.status === 'DEFECTIVE'));
+});
+
+// ======================== COMPRAS ========================
+
+app.get('/api/compras', auth, (req, res) => {
+  const db = loadDb();
+  res.json(db.compras || []);
+});
+
+app.post('/api/compras', auth, (req, res) => {
+  const db = loadDb();
+  if (!db.compras) db.compras = [];
+  const compra = {
+    id: nextId(db.compras),
+    status: 'PENDENTE',
+    created_at: now(),
+    ...req.body,
+  };
+  db.compras.push(compra);
+  saveDb(db);
+  res.json(compra);
+});
+
 // ======================== CADASTROS GENÉRICOS (espelho RAJ) ========================
 
 // Coleções simples liberadas para CRUD genérico (Cadastrar/Consultar como no RAJ)
@@ -1044,6 +1231,16 @@ const GENERIC_COLLECTIONS = [
   'bancos', 'contas_correntes', 'bandeiras_cartao', 'formas_pagamento',
   'grupos_produto', 'subgrupos_produto', 'unidades_medida',
   'tipos_operacao', 'series_nota', 'cfops', 'regionais', 'metas_lojas',
+  // Pedidos
+  'motivos_cancelamento', 'motivos_bonificacao',
+  // Suprimentos
+  'armazens', 'motivos_devolucao',
+  // Produtos
+  'canais_produto', 'tipos_produto',
+  // Frente de Loja
+  'motivos_sangria',
+  // Marketing
+  'cashback', 'cupons', 'promocoes',
 ];
 
 app.get('/api/coll/:name', auth, (req, res) => {

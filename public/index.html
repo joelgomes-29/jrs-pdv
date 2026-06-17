@@ -44,7 +44,16 @@
       <div class="nav-group">
         <div class="nav-group-title">Frente de Loja</div>
         <a class="nav-item" data-section="pdv"><span class="nav-icon">&#9660;</span> PDV · Venda</a>
+        <a class="nav-item" data-section="caixa"><span class="nav-icon">&#9660;</span> Caixa</a>
         <a class="nav-item" data-section="cad:metas_lojas"><span class="nav-icon">&#9660;</span> Metas Lojas</a>
+        <a class="nav-item" data-section="cad:motivos_sangria"><span class="nav-icon">&#9660;</span> Motivo Sangria</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Pedidos</div>
+        <a class="nav-item" data-section="pedidos"><span class="nav-icon">&#9660;</span> Pedido NFe/NFCe</a>
+        <a class="nav-item" data-section="pedidos-aprov"><span class="nav-icon">&#9660;</span> Aprovação Financeiro</a>
+        <a class="nav-item" data-section="cad:motivos_cancelamento"><span class="nav-icon">&#9660;</span> Motivo Cancelamento</a>
+        <a class="nav-item" data-section="cad:motivos_bonificacao"><span class="nav-icon">&#9660;</span> Motivo Bonificação</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Fiscal</div>
@@ -69,20 +78,35 @@
         <a class="nav-item" data-section="cad:contas_correntes"><span class="nav-icon">&#9660;</span> Conta Corrente</a>
         <a class="nav-item" data-section="cad:bandeiras_cartao"><span class="nav-icon">&#9660;</span> Bandeira Cartão</a>
         <a class="nav-item" data-section="cad:formas_pagamento"><span class="nav-icon">&#9660;</span> Forma de Pagamento</a>
+        <a class="nav-item" data-section="fluxo-caixa"><span class="nav-icon">&#9660;</span> Fluxo de Caixa</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Produtos</div>
         <a class="nav-item" data-section="products"><span class="nav-icon">&#9660;</span> Produto</a>
         <a class="nav-item" data-section="cad:grupos_produto"><span class="nav-icon">&#9660;</span> Grupo de Produto</a>
         <a class="nav-item" data-section="cad:subgrupos_produto"><span class="nav-icon">&#9660;</span> SubGrupo de Produto</a>
+        <a class="nav-item" data-section="cad:tipos_produto"><span class="nav-icon">&#9660;</span> Tipo de Produto</a>
+        <a class="nav-item" data-section="cad:canais_produto"><span class="nav-icon">&#9660;</span> Canal de Produto</a>
         <a class="nav-item" data-section="cad:unidades_medida"><span class="nav-icon">&#9660;</span> Unidade de Medida</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Suprimentos</div>
         <a class="nav-item" data-section="note-entry"><span class="nav-icon">&#9660;</span> Entrada de Nota</a>
+        <a class="nav-item" data-section="compras"><span class="nav-icon">&#9660;</span> Compras</a>
         <a class="nav-item" data-section="imei"><span class="nav-icon">&#9660;</span> IMEI · Entrada Direta</a>
         <a class="nav-item" data-section="movements"><span class="nav-icon">&#9660;</span> Transferências</a>
+        <a class="nav-item" data-section="inventario"><span class="nav-icon">&#9660;</span> Inventário</a>
+        <a class="nav-item" data-section="saida"><span class="nav-icon">&#9660;</span> Saída de Material</a>
+        <a class="nav-item" data-section="defeito"><span class="nav-icon">&#9660;</span> Produtos com Defeito</a>
         <a class="nav-item" data-section="stock"><span class="nav-icon">&#9660;</span> Posição de Estoque</a>
+        <a class="nav-item" data-section="cad:armazens"><span class="nav-icon">&#9660;</span> Armazém</a>
+        <a class="nav-item" data-section="cad:motivos_devolucao"><span class="nav-icon">&#9660;</span> Motivo Devolução</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Marketing</div>
+        <a class="nav-item" data-section="cad:cashback"><span class="nav-icon">&#9660;</span> Cashback</a>
+        <a class="nav-item" data-section="cad:cupons"><span class="nav-icon">&#9660;</span> Cupom</a>
+        <a class="nav-item" data-section="cad:promocoes"><span class="nav-icon">&#9660;</span> Promoções</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Acesso</div>
@@ -132,6 +156,128 @@
           <div class="card-header"><h3 id="cadListTitle">Registros</h3></div>
           <div id="cadTable" class="table-wrap"></div>
         </div>
+      </section>
+
+      <!-- PEDIDOS -->
+      <section id="sec-pedidos" class="section">
+        <div class="section-header"><h2>Pedidos</h2><button class="btn btnPrimary" onclick="showPedidoForm()">+ Novo Pedido</button></div>
+        <div id="pedidoFormWrap" class="card hidden" style="margin-bottom:1rem">
+          <div class="card-header"><h3>Novo Pedido</h3></div>
+          <div class="form-grid">
+            <div class="form-group"><label>Loja</label><select id="pedStore"></select></div>
+            <div class="form-group"><label>Cliente</label><select id="pedCustomer"><option value="">Consumidor</option></select></div>
+            <div class="form-group"><label>Vendedor</label><select id="pedSeller"></select></div>
+            <div class="form-group"><label>Tipo</label><select id="pedTipo"><option value="NFCE">NFC-e</option><option value="NFE">NF-e</option></select></div>
+            <div class="form-group"><label>Itens / Descrição</label><input type="text" id="pedItems" placeholder="Ex: 1x REALME 12" /></div>
+            <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="pedTotal" step="0.01" min="0" /></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btnPrimary" onclick="submitPedido()">Salvar Pedido</button>
+            <button class="btn btnGhost" onclick="hidePedidoForm()">Cancelar</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Pedidos</h3></div><div id="pedidoTable" class="table-wrap"></div></div>
+      </section>
+
+      <!-- APROVAÇÃO FINANCEIRO -->
+      <section id="sec-pedidos-aprov" class="section">
+        <div class="section-header"><h2>Aprovação Financeiro</h2></div>
+        <div class="card"><div class="card-header"><h3>Pedidos Pendentes</h3></div><div id="pedidoAprovTable" class="table-wrap"></div></div>
+      </section>
+
+      <!-- CAIXA -->
+      <section id="sec-caixa" class="section">
+        <div class="section-header"><h2>Caixa</h2></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+          <div class="card flex-1">
+            <div class="card-header"><h3>Operações</h3></div>
+            <div class="form-grid">
+              <div class="form-group"><label>Loja</label><select id="caixaStore" onchange="loadCaixa()"></select></div>
+              <div class="form-group"><label>Valor (R$)</label><input type="number" id="caixaValor" step="0.01" min="0" /></div>
+              <div class="form-group full-span"><label>Motivo (sangria/suprimento)</label><input type="text" id="caixaMotivo" /></div>
+            </div>
+            <div class="form-actions" style="flex-wrap:wrap">
+              <button class="btn btnSuccess" onclick="caixaAbrir()">Abrir Caixa</button>
+              <button class="btn btnWarning" onclick="caixaSangria()">Sangria</button>
+              <button class="btn btnPrimary" onclick="caixaSuprimento()">Suprimento</button>
+              <button class="btn btnDanger" onclick="caixaFechar()">Fechar Caixa</button>
+            </div>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Histórico de Caixa</h3></div><div id="caixaTable" class="table-wrap"></div></div>
+      </section>
+
+      <!-- FLUXO DE CAIXA -->
+      <section id="sec-fluxo-caixa" class="section">
+        <div class="section-header"><h2>Fluxo de Caixa</h2></div>
+        <div class="card">
+          <div class="card-header"><h3>Movimento diário</h3>
+            <div class="card-actions">
+              <select id="fcStore" onchange="loadFluxoCaixa()"><option value="">Todas as lojas</option></select>
+              <input type="date" id="fcStart" onchange="loadFluxoCaixa()" />
+              <input type="date" id="fcEnd" onchange="loadFluxoCaixa()" />
+            </div>
+          </div>
+          <div id="fluxoCaixaTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- INVENTÁRIO -->
+      <section id="sec-inventario" class="section">
+        <div class="section-header"><h2>Inventário</h2><button class="btn btnPrimary" onclick="showInvForm()">+ Contagem</button></div>
+        <div id="invFormWrap" class="card hidden" style="margin-bottom:1rem">
+          <div class="card-header"><h3>Nova Contagem</h3></div>
+          <div class="form-grid">
+            <div class="form-group"><label>Loja</label><select id="invStore"></select></div>
+            <div class="form-group"><label>Produto</label><select id="invProduct"></select></div>
+            <div class="form-group"><label>Contagem física</label><input type="number" id="invContagem" min="0" /></div>
+            <div class="form-group"><label>Observação</label><input type="text" id="invObs" /></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btnPrimary" onclick="submitInv()">Registrar</button>
+            <button class="btn btnGhost" onclick="hideInvForm()">Cancelar</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Contagens</h3></div><div id="invTable" class="table-wrap"></div></div>
+      </section>
+
+      <!-- COMPRAS -->
+      <section id="sec-compras" class="section">
+        <div class="section-header"><h2>Compras</h2><button class="btn btnPrimary" onclick="showCompraForm()">+ Nova Compra</button></div>
+        <div id="compraFormWrap" class="card hidden" style="margin-bottom:1rem">
+          <div class="card-header"><h3>Nova Compra</h3></div>
+          <div class="form-grid">
+            <div class="form-group"><label>Fornecedor</label><select id="compSupplier"><option value="">Selecione...</option></select></div>
+            <div class="form-group"><label>Loja</label><select id="compStore"></select></div>
+            <div class="form-group"><label>Descrição</label><input type="text" id="compDesc" /></div>
+            <div class="form-group"><label>Valor (R$)</label><input type="number" id="compValor" step="0.01" min="0" /></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btnPrimary" onclick="submitCompra()">Salvar</button>
+            <button class="btn btnGhost" onclick="hideCompraForm()">Cancelar</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Compras</h3></div><div id="compraTable" class="table-wrap"></div></div>
+      </section>
+
+      <!-- SAÍDA DE MATERIAL -->
+      <section id="sec-saida" class="section">
+        <div class="section-header"><h2>Saída de Material</h2></div>
+        <div class="card" style="max-width:520px">
+          <div class="card-header"><h3>Registrar Saída / Defeito</h3></div>
+          <div class="form-grid">
+            <div class="form-group"><label>IMEI</label><input type="text" id="saidaImei" placeholder="IMEI disponível" /></div>
+            <div class="form-group"><label>Tipo</label><select id="saidaTipo"><option value="SAIDA">Saída</option><option value="DEFEITO">Defeito</option></select></div>
+            <div class="form-group full-span"><label>Motivo</label><input type="text" id="saidaMotivo" /></div>
+          </div>
+          <div class="form-actions"><button class="btn btnWarning" onclick="submitSaida()">Registrar</button></div>
+        </div>
+      </section>
+
+      <!-- PRODUTOS COM DEFEITO -->
+      <section id="sec-defeito" class="section">
+        <div class="section-header"><h2>Produtos com Defeito</h2></div>
+        <div class="card"><div class="card-header"><h3>IMEIs marcados como defeito</h3></div><div id="defeitoTable" class="table-wrap"></div></div>
       </section>
 
       <!-- DASHBOARD -->

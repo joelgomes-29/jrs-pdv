@@ -109,6 +109,7 @@ function populateAllStoreSelects() {
     'neStore', 'movFrom', 'movTo', 'retStore', 'stockFilterStore',
     'nfeStore', 'nfeListStore', 'cfgStore', 'finStore', 'cpStore',
     'crStore', 'salesFilterStore', 'rpStore', 'sellerStoreId',
+    'pedStore', 'caixaStore', 'fcStore', 'invStore', 'compStore',
   ];
   storeSelects.forEach(id => {
     const el = $(id);
@@ -177,6 +178,10 @@ function navigateTo(section) {
     'customers': 'Clientes', 'sellers': 'Vendedores', 'stores': 'Lojas',
     'sales': 'Vendas', 'report-product': 'Fat. por Produto',
     'report-store': 'Fat. por Loja',
+    'pedidos': 'Pedidos', 'pedidos-aprov': 'Aprovação Financeiro',
+    'caixa': 'Caixa', 'fluxo-caixa': 'Fluxo de Caixa',
+    'inventario': 'Inventário', 'compras': 'Compras',
+    'saida': 'Saída de Material', 'defeito': 'Produtos com Defeito',
   };
   $('topbarTitle').textContent = titles[section] || section;
   state.currentSection = section;
@@ -202,6 +207,14 @@ function navigateTo(section) {
     'sales': loadSales,
     'report-product': loadReportProduct,
     'report-store': loadReportStore,
+    'pedidos': loadPedidos,
+    'pedidos-aprov': loadPedidosAprov,
+    'caixa': loadCaixa,
+    'fluxo-caixa': loadFluxoCaixa,
+    'inventario': loadInv,
+    'compras': loadCompras,
+    'saida': () => {},
+    'defeito': loadDefeito,
   };
   if (loaders[section]) loaders[section]();
 }
@@ -1347,6 +1360,249 @@ async function loadReportStore() {
   } catch (e) { showToast('Erro: ' + e.message, 'error'); }
 }
 
+// ==================== PEDIDOS ====================
+
+const pedStatusBadge = s => {
+  const m = { PENDENTE: 'badge-yellow', APROVADO: 'badge-blue', FATURADO: 'badge-green', CANCELADO: 'badge-red' };
+  return `<span class="badge ${m[s] || 'badge-yellow'}">${s}</span>`;
+};
+
+function showPedidoForm() {
+  populateSelect($('pedStore'), state.stores, 'id', 'name', 'Selecione...');
+  populateSelect($('pedCustomer'), state.customers, 'id', 'name', 'Consumidor');
+  populateSelect($('pedSeller'), state.sellers, 'id', 'name', 'Selecione...');
+  $('pedidoFormWrap').classList.remove('hidden');
+}
+function hidePedidoForm() { $('pedidoFormWrap').classList.add('hidden'); }
+
+async function submitPedido() {
+  const payload = {
+    store_id: Number($('pedStore').value),
+    customer_id: $('pedCustomer').value ? Number($('pedCustomer').value) : null,
+    seller_id: $('pedSeller').value ? Number($('pedSeller').value) : null,
+    tipo: $('pedTipo').value,
+    items: [{ desc: $('pedItems').value }],
+    total_value: Number($('pedTotal').value || 0),
+  };
+  if (!payload.store_id) return showToast('Selecione a loja', 'error');
+  try {
+    await api('POST', '/api/pedidos', payload);
+    showToast('Pedido criado!');
+    hidePedidoForm();
+    loadPedidos();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function setPedidoStatus(id, status) {
+  try {
+    await api('PATCH', `/api/pedidos/${id}`, { status });
+    showToast('Pedido ' + status.toLowerCase());
+    loadPedidos();
+    loadPedidosAprov();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function loadPedidos() {
+  const storeId = $('globalStore')?.value || '';
+  const url = '/api/pedidos' + (storeId ? `?store_id=${storeId}` : '');
+  try {
+    const rows = await api('GET', url);
+    const store = id => (state.stores.find(s => s.id === id) || {}).name || id;
+    $('pedidoTable').innerHTML = makeTable(
+      ['#', 'Loja', 'Tipo', 'Total', 'Status', 'Ações'],
+      rows.reverse().map(p => [
+        p.id, store(p.store_id), p.tipo, fmt(p.total_value), pedStatusBadge(p.status),
+        (p.status === 'PENDENTE' ? `<button class="btn btnPrimary btn-sm" onclick="setPedidoStatus(${p.id},'APROVADO')">Aprovar</button>` : '') +
+        (p.status === 'APROVADO' ? `<button class="btn btnSuccess btn-sm" onclick="setPedidoStatus(${p.id},'FATURADO')">Faturar</button>` : '') +
+        (p.status !== 'CANCELADO' && p.status !== 'FATURADO' ? ` <button class="btn btnGhost btn-sm" onclick="setPedidoStatus(${p.id},'CANCELADO')">Cancelar</button>` : ''),
+      ])
+    );
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function loadPedidosAprov() {
+  try {
+    const rows = await api('GET', '/api/pedidos?status=PENDENTE');
+    const store = id => (state.stores.find(s => s.id === id) || {}).name || id;
+    $('pedidoAprovTable').innerHTML = makeTable(
+      ['#', 'Loja', 'Tipo', 'Total', 'Ações'],
+      rows.reverse().map(p => [
+        p.id, store(p.store_id), p.tipo, fmt(p.total_value),
+        `<button class="btn btnSuccess btn-sm" onclick="setPedidoStatus(${p.id},'APROVADO')">Aprovar</button>
+         <button class="btn btnGhost btn-sm" onclick="setPedidoStatus(${p.id},'CANCELADO')">Reprovar</button>`,
+      ])
+    );
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ==================== CAIXA ====================
+
+function caixaPayload() {
+  return { store_id: Number($('caixaStore').value), amount: Number($('caixaValor').value || 0), motivo: $('caixaMotivo').value };
+}
+async function caixaAbrir() {
+  try { await api('POST', '/api/cash/open', caixaPayload()); showToast('Caixa aberto'); loadCaixa(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function caixaFechar() {
+  try { await api('POST', '/api/cash/close', caixaPayload()); showToast('Caixa fechado'); loadCaixa(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function caixaSangria() {
+  try { await api('POST', '/api/caixa/sangria', caixaPayload()); showToast('Sangria registrada'); loadCaixa(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function caixaSuprimento() {
+  try { await api('POST', '/api/caixa/suprimento', caixaPayload()); showToast('Suprimento registrado'); loadCaixa(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function loadCaixa() {
+  populateSelect($('caixaStore'), state.stores, 'id', 'name', 'Selecione...');
+  const storeId = $('caixaStore')?.value || '';
+  const url = '/api/caixa' + (storeId ? `?store_id=${storeId}` : '');
+  try {
+    const regs = await api('GET', url);
+    $('caixaTable').innerHTML = makeTable(
+      ['#', 'Abertura', 'Valor Abertura', 'Fechamento', 'Valor Fech.', 'Status'],
+      regs.reverse().map(c => [
+        c.id, fmtDate(c.opened_at), fmt(c.opening_amount), c.closed_at ? fmtDate(c.closed_at) : '—',
+        c.closing_amount != null ? fmt(c.closing_amount) : '—',
+        c.status === 'OPEN' ? '<span class="badge badge-green">Aberto</span>' : '<span class="badge badge-red">Fechado</span>',
+      ])
+    );
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ==================== FLUXO DE CAIXA ====================
+
+async function loadFluxoCaixa() {
+  populateSelect($('fcStore'), state.stores, 'id', 'name', 'Todas as lojas');
+  const storeId = $('fcStore')?.value || '';
+  const start = $('fcStart')?.value || '';
+  const end = $('fcEnd')?.value || '';
+  let url = '/api/fluxo-caixa?';
+  if (storeId) url += `store_id=${storeId}&`;
+  if (start) url += `start=${start}&`;
+  if (end) url += `end=${end}&`;
+  try {
+    const days = await api('GET', url);
+    $('fluxoCaixaTable').innerHTML = makeTable(
+      ['Data', 'Entradas', 'Saídas', 'Saldo do dia', 'Saldo acumulado'],
+      days.map(d => [
+        fmtDate(d.date), fmt(d.income), fmt(d.expense),
+        `<strong style="color:${d.saldo_dia >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(d.saldo_dia)}</strong>`,
+        fmt(d.saldo_acumulado),
+      ])
+    );
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ==================== INVENTÁRIO ====================
+
+function showInvForm() {
+  populateSelect($('invStore'), state.stores, 'id', 'name', 'Selecione...');
+  populateSelect($('invProduct'), state.products.filter(p => p.active), 'id', 'name', 'Selecione...');
+  $('invFormWrap').classList.remove('hidden');
+}
+function hideInvForm() { $('invFormWrap').classList.add('hidden'); }
+
+async function submitInv() {
+  const payload = {
+    store_id: Number($('invStore').value),
+    product_id: Number($('invProduct').value),
+    contagem: Number($('invContagem').value || 0),
+    observacao: $('invObs').value,
+  };
+  if (!payload.store_id || !payload.product_id) return showToast('Selecione loja e produto', 'error');
+  try {
+    const inv = await api('POST', '/api/inventario', payload);
+    showToast(`Contagem registrada. Divergência: ${inv.divergencia}`);
+    hideInvForm();
+    loadInv();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function loadInv() {
+  try {
+    const rows = await api('GET', '/api/inventario');
+    const store = id => (state.stores.find(s => s.id === id) || {}).name || id;
+    const prod = id => (state.products.find(p => p.id === id) || {}).name || id;
+    $('invTable').innerHTML = makeTable(
+      ['Data', 'Loja', 'Produto', 'Sistema', 'Contagem', 'Divergência'],
+      rows.reverse().map(i => [
+        fmtDate(i.created_at), store(i.store_id), prod(i.product_id), i.sistema, i.contagem,
+        `<strong style="color:${i.divergencia === 0 ? 'var(--green)' : 'var(--red)'}">${i.divergencia}</strong>`,
+      ])
+    );
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ==================== COMPRAS ====================
+
+function showCompraForm() {
+  populateSelect($('compSupplier'), state.suppliers, 'id', 'name', 'Selecione...');
+  populateSelect($('compStore'), state.stores, 'id', 'name', 'Selecione...');
+  $('compraFormWrap').classList.remove('hidden');
+}
+function hideCompraForm() { $('compraFormWrap').classList.add('hidden'); }
+
+async function submitCompra() {
+  const payload = {
+    supplier_id: $('compSupplier').value ? Number($('compSupplier').value) : null,
+    store_id: Number($('compStore').value),
+    description: $('compDesc').value,
+    value: Number($('compValor').value || 0),
+  };
+  if (!payload.description) return showToast('Informe a descrição', 'error');
+  try {
+    await api('POST', '/api/compras', payload);
+    showToast('Compra registrada!');
+    hideCompraForm();
+    loadCompras();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function loadCompras() {
+  try {
+    const rows = await api('GET', '/api/compras');
+    const store = id => (state.stores.find(s => s.id === id) || {}).name || '—';
+    const sup = id => (state.suppliers.find(s => s.id === id) || {}).name || '—';
+    $('compraTable').innerHTML = makeTable(
+      ['#', 'Fornecedor', 'Loja', 'Descrição', 'Valor', 'Status'],
+      rows.reverse().map(c => [
+        c.id, sup(c.supplier_id), store(c.store_id), c.description || '—', fmt(c.value),
+        `<span class="badge badge-yellow">${c.status}</span>`,
+      ])
+    );
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ==================== SAÍDA / DEFEITO ====================
+
+async function submitSaida() {
+  const imei = $('saidaImei').value.trim();
+  const tipo = $('saidaTipo').value;
+  const motivo = $('saidaMotivo').value;
+  if (!imei) return showToast('Informe o IMEI', 'error');
+  try {
+    await api('POST', '/api/saida-material', { imei, tipo, motivo });
+    showToast(tipo === 'DEFEITO' ? 'Marcado como defeito' : 'Saída registrada');
+    $('saidaImei').value = ''; $('saidaMotivo').value = '';
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function loadDefeito() {
+  try {
+    const rows = await api('GET', '/api/produtos-defeito');
+    const store = id => (state.stores.find(s => s.id === id) || {}).name || id;
+    const prod = id => (state.products.find(p => p.id === id) || {}).name || id;
+    $('defeitoTable').innerHTML = makeTable(
+      ['IMEI', 'Produto', 'Loja', 'Motivo', 'Data'],
+      rows.reverse().map(u => [u.imei, prod(u.product_id), store(u.store_id), u.saida_motivo || '—', fmtDate(u.saida_at)])
+    );
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
 // ==================== CADASTROS GENÉRICOS (espelho RAJ) ====================
 
 const CAD = {
@@ -1401,6 +1657,33 @@ const CAD = {
     { k: 'store_id', l: 'Loja', t: 'store' },
     { k: 'mes', l: 'Mês (AAAA-MM)', t: 'text' },
     { k: 'meta_valor', l: 'Meta (R$)', t: 'number' },
+  ] },
+  motivos_cancelamento: { title: 'Motivo de Cancelamento', fields: [{ k: 'name', l: 'Motivo', t: 'text' }] },
+  motivos_bonificacao: { title: 'Motivo de Bonificação', fields: [{ k: 'name', l: 'Motivo', t: 'text' }] },
+  motivos_devolucao: { title: 'Motivo de Devolução', fields: [{ k: 'name', l: 'Motivo', t: 'text' }] },
+  motivos_sangria: { title: 'Motivo de Sangria', fields: [{ k: 'name', l: 'Motivo', t: 'text' }] },
+  armazens: { title: 'Armazém', fields: [
+    { k: 'name', l: 'Nome', t: 'text' },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+  ] },
+  canais_produto: { title: 'Canal de Produto', fields: [{ k: 'name', l: 'Canal', t: 'text' }] },
+  tipos_produto: { title: 'Tipo de Produto', fields: [{ k: 'name', l: 'Tipo', t: 'text' }] },
+  cashback: { title: 'Cashback', fields: [
+    { k: 'name', l: 'Regra', t: 'text' },
+    { k: 'percentual', l: 'Percentual (%)', t: 'number' },
+    { k: 'validade_dias', l: 'Validade (dias)', t: 'number' },
+  ] },
+  cupons: { title: 'Cupom', fields: [
+    { k: 'codigo', l: 'Código', t: 'text' },
+    { k: 'tipo', l: 'Tipo', t: 'select', o: ['PERCENTUAL', 'VALOR'] },
+    { k: 'valor', l: 'Valor / %', t: 'number' },
+    { k: 'validade', l: 'Validade (AAAA-MM-DD)', t: 'text' },
+  ] },
+  promocoes: { title: 'Promoção', fields: [
+    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'desconto', l: 'Desconto (%)', t: 'number' },
+    { k: 'inicio', l: 'Início (AAAA-MM-DD)', t: 'text' },
+    { k: 'fim', l: 'Fim (AAAA-MM-DD)', t: 'text' },
   ] },
 };
 

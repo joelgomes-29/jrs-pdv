@@ -552,5 +552,9 @@
   "series_nota": [],
   "cfops": [],
   "regionais": [],
-  "metas_lojas": []
+  "metas_lojas": [],
+  "pedidos": [],
+  "inventarios": [],
+  "compras": [],
+  "cupons": []
 }

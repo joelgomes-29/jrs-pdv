@@ -1241,6 +1241,8 @@ const GENERIC_COLLECTIONS = [
   'motivos_sangria',
   // Marketing
   'cashback', 'cupons', 'promocoes',
+  // Fiscal avançado (espelho RAJ)
+  'tipos_oneracao', 'tipos_contribuinte', 'anexos_ncm', 'contratos',
 ];
 
 app.get('/api/coll/:name', auth, (req, res) => {

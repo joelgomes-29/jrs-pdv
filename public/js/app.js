@@ -1094,19 +1094,19 @@ async function loadProducts() {
 
 // ==================== SUPPLIERS ====================
 
+const SUPPLIER_FIELDS = {
+  supplierName: 'name', supplierRazao: 'razao_social', supplierTipo: 'tipo', supplierCnpj: 'cnpj',
+  supplierIE: 'inscricao_estadual', supplierIM: 'inscricao_municipal', supplierEmail: 'email',
+  supplierFone: 'fone', supplierCelular: 'celular', supplierCep: 'cep', supplierEndereco: 'endereco',
+  supplierNumero: 'numero', supplierBairro: 'bairro', supplierCidade: 'cidade', supplierUf: 'uf',
+};
+
 function showSupplierForm(supplier) {
   $('supplierId').value = supplier ? supplier.id : '';
   $('supplierFormTitle').textContent = supplier ? 'Editar Fornecedor' : 'Novo Fornecedor';
-  if (supplier) {
-    $('supplierName').value = supplier.name;
-    $('supplierCnpj').value = supplier.cnpj || '';
-    $('supplierEmail').value = supplier.email || '';
-    $('supplierFone').value = supplier.fone || '';
-    $('supplierCidade').value = supplier.cidade || '';
-    $('supplierUf').value = supplier.uf || '';
-  } else {
-    ['supplierName', 'supplierCnpj', 'supplierEmail', 'supplierFone', 'supplierCidade', 'supplierUf'].forEach(id => { const el = $(id); if (el) el.value = ''; });
-  }
+  Object.entries(SUPPLIER_FIELDS).forEach(([id, key]) => {
+    const el = $(id); if (el) el.value = supplier ? (supplier[key] || '') : '';
+  });
   $('supplierFormWrap').classList.remove('hidden');
 }
 
@@ -1114,14 +1114,8 @@ function hideSupplierForm() { $('supplierFormWrap').classList.add('hidden'); }
 
 async function submitSupplier() {
   const id = $('supplierId').value;
-  const payload = {
-    name: $('supplierName').value,
-    cnpj: $('supplierCnpj').value,
-    email: $('supplierEmail').value,
-    fone: $('supplierFone').value,
-    cidade: $('supplierCidade').value,
-    uf: $('supplierUf').value,
-  };
+  const payload = {};
+  Object.entries(SUPPLIER_FIELDS).forEach(([elId, key]) => { payload[key] = ($(elId) || {}).value || ''; });
   if (!payload.name) return showToast('Informe o nome', 'error');
   try {
     const method = id ? 'PUT' : 'POST';
@@ -1155,19 +1149,20 @@ async function loadSuppliers() {
 
 // ==================== CUSTOMERS ====================
 
+const CUSTOMER_FIELDS = {
+  customerName: 'name', customerTipoPessoa: 'tipo_pessoa', customerCpf: 'cpf',
+  customerRazao: 'razao_social', customerEmail: 'email', customerFone: 'fone',
+  customerCelular: 'celular', customerIE: 'inscricao_estadual', customerIM: 'inscricao_municipal',
+  customerRamo: 'ramo_atividade', customerCep: 'cep', customerEndereco: 'endereco',
+  customerNumero: 'numero', customerBairro: 'bairro', customerCidade: 'cidade', customerUf: 'uf',
+};
+
 function showCustomerForm(customer) {
   $('customerId').value = customer ? customer.id : '';
   $('customerFormTitle').textContent = customer ? 'Editar Cliente' : 'Novo Cliente';
-  if (customer) {
-    $('customerName').value = customer.name;
-    $('customerCpf').value = customer.cpf || '';
-    $('customerFone').value = customer.fone || '';
-    $('customerEmail').value = customer.email || '';
-    $('customerEndereco').value = customer.endereco || '';
-    $('customerCidade').value = customer.cidade || '';
-  } else {
-    ['customerName', 'customerCpf', 'customerFone', 'customerEmail', 'customerEndereco', 'customerCidade'].forEach(id => { const el = $(id); if (el) el.value = ''; });
-  }
+  Object.entries(CUSTOMER_FIELDS).forEach(([id, key]) => {
+    const el = $(id); if (el) el.value = customer ? (customer[key] || '') : '';
+  });
   $('customerFormWrap').classList.remove('hidden');
 }
 
@@ -1175,14 +1170,8 @@ function hideCustomerForm() { $('customerFormWrap').classList.add('hidden'); }
 
 async function submitCustomer() {
   const id = $('customerId').value;
-  const payload = {
-    name: $('customerName').value,
-    cpf: $('customerCpf').value,
-    fone: $('customerFone').value,
-    email: $('customerEmail').value,
-    endereco: $('customerEndereco').value,
-    cidade: $('customerCidade').value,
-  };
+  const payload = {};
+  Object.entries(CUSTOMER_FIELDS).forEach(([elId, key]) => { payload[key] = ($(elId) || {}).value || ''; });
   if (!payload.name) return showToast('Informe o nome', 'error');
   try {
     const method = id ? 'PUT' : 'POST';
@@ -1611,11 +1600,14 @@ const CAD = {
     { k: 'name', l: 'Nome do Banco', t: 'text' },
   ] },
   contas_correntes: { title: 'Conta Corrente', fields: [
-    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'name', l: 'Nome', t: 'text' },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+    { k: 'tipo', l: 'Tipo', t: 'select', o: ['CONTA CORRENTE', 'POUPANÇA', 'INTERNA'] },
     { k: 'banco', l: 'Banco', t: 'text' },
     { k: 'agencia', l: 'Agência', t: 'text' },
     { k: 'conta', l: 'Conta', t: 'text' },
-    { k: 'store_id', l: 'Loja', t: 'store' },
+    { k: 'saldo_inicial', l: 'Saldo inicial (R$)', t: 'number' },
+    { k: 'limite', l: 'Limite da conta (R$)', t: 'number' },
   ] },
   bandeiras_cartao: { title: 'Bandeira de Cartão', fields: [
     { k: 'name', l: 'Bandeira', t: 'text' },
@@ -1642,13 +1634,21 @@ const CAD = {
     { k: 'cfop', l: 'CFOP padrão', t: 'text' },
   ] },
   series_nota: { title: 'Série de Nota', fields: [
-    { k: 'serie', l: 'Série', t: 'text' },
-    { k: 'modelo', l: 'Modelo (55=NF-e, 65=NFC-e)', t: 'text' },
-    { k: 'store_id', l: 'Loja', t: 'store' },
+    { k: 'store_id', l: 'Empresa / Loja', t: 'store' },
+    { k: 'serie', l: 'Série Oficial', t: 'text' },
+    { k: 'ultima_nota', l: 'Última Nota', t: 'number' },
+    { k: 'modelo', l: 'Modelo', t: 'select', o: ['55', '65'] },
+    { k: 'movimento', l: 'Movimento', t: 'select', o: ['ENTRADA', 'SAÍDA'] },
   ] },
   cfops: { title: 'CFOP', fields: [
     { k: 'codigo', l: 'CFOP', t: 'text' },
     { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'natureza', l: 'Descrição Natureza', t: 'text' },
+    { k: 'tipo_operacao', l: 'Tipo Operação', t: 'text' },
+    { k: 'retira_estoque', l: 'Retira do Estoque?', t: 'select', o: ['Sim', 'Não'] },
+    { k: 'gera_nota_entrada', l: 'Gera Nota Entrada?', t: 'select', o: ['Sim', 'Não'] },
+    { k: 'cfop_devolucao', l: 'CFOP Devolução', t: 'text' },
+    { k: 'ativo', l: 'Ativo', t: 'select', o: ['Sim', 'Não'] },
   ] },
   regionais: { title: 'Regional', fields: [
     { k: 'name', l: 'Regional', t: 'text' },
@@ -1684,6 +1684,25 @@ const CAD = {
     { k: 'desconto', l: 'Desconto (%)', t: 'number' },
     { k: 'inicio', l: 'Início (AAAA-MM-DD)', t: 'text' },
     { k: 'fim', l: 'Fim (AAAA-MM-DD)', t: 'text' },
+  ] },
+  tipos_oneracao: { title: 'Tipo de Onerosidade (RTC)', fields: [
+    { k: 'codigo', l: 'Código', t: 'text' },
+    { k: 'name', l: 'Descrição', t: 'text' },
+  ] },
+  tipos_contribuinte: { title: 'Tipo Contribuinte IBS / CBS', fields: [
+    { k: 'codigo', l: 'Código', t: 'text' },
+    { k: 'name', l: 'Descrição', t: 'text' },
+  ] },
+  anexos_ncm: { title: 'Anexo Fiscal NCM', fields: [
+    { k: 'ncm', l: 'NCM', t: 'text' },
+    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'aliquota', l: 'Alíquota (%)', t: 'number' },
+  ] },
+  contratos: { title: 'Contrato Financeiro', fields: [
+    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'customer_id', l: 'Cliente', t: 'text' },
+    { k: 'valor', l: 'Valor (R$)', t: 'number' },
+    { k: 'vencimento', l: 'Vencimento (AAAA-MM-DD)', t: 'text' },
   ] },
 };
 

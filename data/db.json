@@ -556,5 +556,6 @@
   "pedidos": [],
   "inventarios": [],
   "compras": [],
-  "cupons": []
+  "cupons": [],
+  "tipos_oneracao": []
 }

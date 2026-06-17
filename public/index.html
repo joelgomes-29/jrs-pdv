@@ -63,11 +63,14 @@
         <a class="nav-item" data-section="cad:tipos_operacao"><span class="nav-icon">&#9660;</span> Tipo Operação</a>
         <a class="nav-item" data-section="cad:series_nota"><span class="nav-icon">&#9660;</span> Série Nota</a>
         <a class="nav-item" data-section="cad:cfops"><span class="nav-icon">&#9660;</span> Configuração CFOP</a>
+        <a class="nav-item" data-section="cad:tipos_oneracao"><span class="nav-icon">&#9660;</span> Tipo Onerosidade (RTC)</a>
+        <a class="nav-item" data-section="cad:anexos_ncm"><span class="nav-icon">&#9660;</span> Anexo Fiscal NCM</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Clientes / Fornecedores</div>
         <a class="nav-item" data-section="customers"><span class="nav-icon">&#9660;</span> Cliente</a>
         <a class="nav-item" data-section="suppliers"><span class="nav-icon">&#9660;</span> Fornecedor</a>
+        <a class="nav-item" data-section="cad:tipos_contribuinte"><span class="nav-icon">&#9660;</span> Tipo Contribuinte IBS/CBS</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Financeiro</div>
@@ -78,6 +81,7 @@
         <a class="nav-item" data-section="cad:contas_correntes"><span class="nav-icon">&#9660;</span> Conta Corrente</a>
         <a class="nav-item" data-section="cad:bandeiras_cartao"><span class="nav-icon">&#9660;</span> Bandeira Cartão</a>
         <a class="nav-item" data-section="cad:formas_pagamento"><span class="nav-icon">&#9660;</span> Forma de Pagamento</a>
+        <a class="nav-item" data-section="cad:contratos"><span class="nav-icon">&#9660;</span> Contrato Financeiro</a>
         <a class="nav-item" data-section="fluxo-caixa"><span class="nav-icon">&#9660;</span> Fluxo de Caixa</a>
       </div>
       <div class="nav-group">
@@ -919,30 +923,21 @@
           <div class="card-header"><h3 id="supplierFormTitle">Novo Fornecedor</h3></div>
           <input type="hidden" id="supplierId" />
           <div class="form-grid">
-            <div class="form-group">
-              <label>Razão Social</label>
-              <input type="text" id="supplierName" />
-            </div>
-            <div class="form-group">
-              <label>CNPJ</label>
-              <input type="text" id="supplierCnpj" maxlength="18" />
-            </div>
-            <div class="form-group">
-              <label>E-mail</label>
-              <input type="email" id="supplierEmail" />
-            </div>
-            <div class="form-group">
-              <label>Telefone</label>
-              <input type="text" id="supplierFone" />
-            </div>
-            <div class="form-group">
-              <label>Cidade</label>
-              <input type="text" id="supplierCidade" />
-            </div>
-            <div class="form-group">
-              <label>UF</label>
-              <input type="text" id="supplierUf" maxlength="2" />
-            </div>
+            <div class="form-group"><label>Nome *</label><input type="text" id="supplierName" /></div>
+            <div class="form-group"><label>Razão Social</label><input type="text" id="supplierRazao" /></div>
+            <div class="form-group"><label>Tipo</label><select id="supplierTipo"><option value="FORNECEDOR">Fornecedor</option><option value="FABRICANTE">Fabricante</option><option value="AMBOS">Ambos</option><option value="FUNCIONARIO">Funcionário</option><option value="FREELANCER">Freelancer</option></select></div>
+            <div class="form-group"><label>CPF / CNPJ</label><input type="text" id="supplierCnpj" maxlength="18" /></div>
+            <div class="form-group"><label>Inscrição Estadual</label><input type="text" id="supplierIE" /></div>
+            <div class="form-group"><label>Inscrição Municipal</label><input type="text" id="supplierIM" /></div>
+            <div class="form-group"><label>E-mail</label><input type="email" id="supplierEmail" /></div>
+            <div class="form-group"><label>Telefone Fixo</label><input type="text" id="supplierFone" /></div>
+            <div class="form-group"><label>Telefone Celular</label><input type="text" id="supplierCelular" /></div>
+            <div class="form-group"><label>CEP</label><input type="text" id="supplierCep" /></div>
+            <div class="form-group"><label>Logradouro</label><input type="text" id="supplierEndereco" /></div>
+            <div class="form-group"><label>Número</label><input type="text" id="supplierNumero" /></div>
+            <div class="form-group"><label>Bairro</label><input type="text" id="supplierBairro" /></div>
+            <div class="form-group"><label>Cidade</label><input type="text" id="supplierCidade" /></div>
+            <div class="form-group"><label>UF</label><input type="text" id="supplierUf" maxlength="2" /></div>
           </div>
           <div class="form-actions">
             <button class="btn btnPrimary" onclick="submitSupplier()">Salvar</button>
@@ -965,30 +960,22 @@
           <div class="card-header"><h3 id="customerFormTitle">Novo Cliente</h3></div>
           <input type="hidden" id="customerId" />
           <div class="form-grid">
-            <div class="form-group">
-              <label>Nome</label>
-              <input type="text" id="customerName" />
-            </div>
-            <div class="form-group">
-              <label>CPF / CNPJ</label>
-              <input type="text" id="customerCpf" />
-            </div>
-            <div class="form-group">
-              <label>Telefone</label>
-              <input type="text" id="customerFone" />
-            </div>
-            <div class="form-group">
-              <label>E-mail</label>
-              <input type="email" id="customerEmail" />
-            </div>
-            <div class="form-group">
-              <label>Endereço</label>
-              <input type="text" id="customerEndereco" />
-            </div>
-            <div class="form-group">
-              <label>Cidade</label>
-              <input type="text" id="customerCidade" />
-            </div>
+            <div class="form-group"><label>Nome / Nome Fantasia *</label><input type="text" id="customerName" /></div>
+            <div class="form-group"><label>Tipo Pessoa</label><select id="customerTipoPessoa"><option value="">Selecione</option><option value="FISICA">Física</option><option value="JURIDICA">Jurídica</option></select></div>
+            <div class="form-group"><label>CPF / CNPJ</label><input type="text" id="customerCpf" /></div>
+            <div class="form-group"><label>Razão Social</label><input type="text" id="customerRazao" /></div>
+            <div class="form-group"><label>E-mail</label><input type="email" id="customerEmail" /></div>
+            <div class="form-group"><label>Telefone Fixo</label><input type="text" id="customerFone" /></div>
+            <div class="form-group"><label>Telefone Celular</label><input type="text" id="customerCelular" /></div>
+            <div class="form-group"><label>Inscrição Estadual</label><input type="text" id="customerIE" /></div>
+            <div class="form-group"><label>Inscrição Municipal</label><input type="text" id="customerIM" /></div>
+            <div class="form-group"><label>Ramo de Atividade</label><input type="text" id="customerRamo" /></div>
+            <div class="form-group"><label>CEP</label><input type="text" id="customerCep" /></div>
+            <div class="form-group"><label>Logradouro</label><input type="text" id="customerEndereco" /></div>
+            <div class="form-group"><label>Número</label><input type="text" id="customerNumero" /></div>
+            <div class="form-group"><label>Bairro</label><input type="text" id="customerBairro" /></div>
+            <div class="form-group"><label>Cidade</label><input type="text" id="customerCidade" /></div>
+            <div class="form-group"><label>UF</label><input type="text" id="customerUf" maxlength="2" /></div>
           </div>
           <div class="form-actions">
             <button class="btn btnPrimary" onclick="submitCustomer()">Salvar</button>

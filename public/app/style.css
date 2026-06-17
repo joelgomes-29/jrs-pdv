@@ -161,6 +161,13 @@ input::placeholder { color: #64748b; }
 .pay-spinner { text-align: center; color: var(--muted); padding: 1rem 0; }
 .modal-actions { display: flex; flex-direction: column; gap: .5rem; }
 
+/* CONFIG */
+.cfg-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; margin-bottom: 1rem; }
+.cfg-title { font-weight: 700; margin-bottom: .5rem; }
+.maq-status { font-size: .9rem; color: var(--muted); padding: .5rem .75rem; background: var(--surface-2); border-radius: 10px; }
+.maq-status.ok { color: var(--green); }
+.maq-status.off { color: var(--muted); }
+
 /* TOAST */
 .toast {
   position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%);

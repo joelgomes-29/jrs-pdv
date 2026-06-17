@@ -95,6 +95,34 @@ function switchTab(btn) {
   $(btn.dataset.tab).classList.add('active');
   if (btn.dataset.tab === 'scEstoque') loadStock();
   if (btn.dataset.tab === 'scVendas') loadMySales();
+  if (btn.dataset.tab === 'scConfig') loadConfig();
+}
+
+function loadConfig() {
+  $('cfgUser').textContent = S.user ? `${S.user.name} (${S.user.role})` : '';
+  const status = $('maqStatus');
+  if (hasMaquininha()) {
+    status.textContent = '✓ Maquininha Stone detectada';
+    status.className = 'maq-status ok';
+    $('btnActivate').disabled = false;
+  } else {
+    status.textContent = '✕ Rodando no navegador (sem maquininha)';
+    status.className = 'maq-status off';
+    $('btnActivate').disabled = true;
+  }
+}
+
+function activateStone() {
+  const code = $('stoneCode').value.trim();
+  if (!code) return toast('Informe o Stone Code', 'error');
+  if (!hasMaquininha()) return toast('Maquininha não detectada', 'error');
+  const cbId = 'act' + Date.now();
+  window.__stoneCbs[cbId] = (ok, msg) => {
+    toast(ok ? 'Maquininha ativada!' : (msg || 'Falha na ativação'), ok ? 'success' : 'error');
+    loadConfig();
+  };
+  try { window.AndroidStone.activate(code, cbId); }
+  catch (e) { toast(e.message, 'error'); }
 }
 
 // ==================== VENDA ====================

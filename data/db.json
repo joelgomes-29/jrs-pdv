@@ -557,5 +557,7 @@
   "inventarios": [],
   "compras": [],
   "cupons": [],
-  "tipos_oneracao": []
+  "tipos_oneracao": [],
+  "grupos_tributarios": [],
+  "reforma_tributaria": []
 }

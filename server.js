@@ -1245,6 +1245,8 @@ const GENERIC_COLLECTIONS = [
   'tipos_oneracao', 'tipos_contribuinte', 'anexos_ncm', 'contratos',
   // Frente de Loja / Produtos (espelho RAJ)
   'equipamentos_impressao', 'locais_impressao', 'taxas_pix', 'tabelas_preco', 'segmentos',
+  // Fiscal pesado + Acesso (espelho RAJ - Pass 3)
+  'grupos_tributarios', 'reforma_tributaria', 'perfis', 'tipos_usuario', 'certificados',
 ];
 
 app.get('/api/coll/:name', auth, (req, res) => {

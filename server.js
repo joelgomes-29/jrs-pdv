@@ -1243,6 +1243,8 @@ const GENERIC_COLLECTIONS = [
   'cashback', 'cupons', 'promocoes',
   // Fiscal avançado (espelho RAJ)
   'tipos_oneracao', 'tipos_contribuinte', 'anexos_ncm', 'contratos',
+  // Frente de Loja / Produtos (espelho RAJ)
+  'equipamentos_impressao', 'locais_impressao', 'taxas_pix', 'tabelas_preco', 'segmentos',
 ];
 
 app.get('/api/coll/:name', auth, (req, res) => {

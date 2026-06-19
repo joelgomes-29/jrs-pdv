@@ -46,12 +46,16 @@
         <a class="nav-item" data-section="pdv"><span class="nav-icon">&#9660;</span> PDV · Venda</a>
         <a class="nav-item" data-section="caixa"><span class="nav-icon">&#9660;</span> Caixa</a>
         <a class="nav-item" data-section="cad:metas_lojas"><span class="nav-icon">&#9660;</span> Metas Lojas</a>
+        <a class="nav-item" data-section="cad:taxas_pix"><span class="nav-icon">&#9660;</span> Taxa Pix</a>
+        <a class="nav-item" data-section="cad:equipamentos_impressao"><span class="nav-icon">&#9660;</span> Equipamento Impressão</a>
+        <a class="nav-item" data-section="cad:locais_impressao"><span class="nav-icon">&#9660;</span> Local de Impressão</a>
         <a class="nav-item" data-section="cad:motivos_sangria"><span class="nav-icon">&#9660;</span> Motivo Sangria</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Pedidos</div>
         <a class="nav-item" data-section="pedidos"><span class="nav-icon">&#9660;</span> Pedido NFe/NFCe</a>
         <a class="nav-item" data-section="pedidos-aprov"><span class="nav-icon">&#9660;</span> Aprovação Financeiro</a>
+        <a class="nav-item" data-section="cad:segmentos"><span class="nav-icon">&#9660;</span> Segmento</a>
         <a class="nav-item" data-section="cad:motivos_cancelamento"><span class="nav-icon">&#9660;</span> Motivo Cancelamento</a>
         <a class="nav-item" data-section="cad:motivos_bonificacao"><span class="nav-icon">&#9660;</span> Motivo Bonificação</a>
       </div>
@@ -92,6 +96,7 @@
         <a class="nav-item" data-section="cad:tipos_produto"><span class="nav-icon">&#9660;</span> Tipo de Produto</a>
         <a class="nav-item" data-section="cad:canais_produto"><span class="nav-icon">&#9660;</span> Canal de Produto</a>
         <a class="nav-item" data-section="cad:unidades_medida"><span class="nav-icon">&#9660;</span> Unidade de Medida</a>
+        <a class="nav-item" data-section="cad:tabelas_preco"><span class="nav-icon">&#9660;</span> Tabela de Preço</a>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">Suprimentos</div>
@@ -168,11 +173,21 @@
         <div id="pedidoFormWrap" class="card hidden" style="margin-bottom:1rem">
           <div class="card-header"><h3>Novo Pedido</h3></div>
           <div class="form-grid">
-            <div class="form-group"><label>Loja</label><select id="pedStore"></select></div>
+            <div class="form-group"><label>Empresa / Loja *</label><select id="pedStore"></select></div>
+            <div class="form-group"><label>Modelo *</label><select id="pedTipo"><option value="NFCE">NFC-e (65)</option><option value="NFE">NF-e (55)</option></select></div>
             <div class="form-group"><label>Cliente</label><select id="pedCustomer"><option value="">Consumidor</option></select></div>
-            <div class="form-group"><label>Vendedor</label><select id="pedSeller"></select></div>
-            <div class="form-group"><label>Tipo</label><select id="pedTipo"><option value="NFCE">NFC-e</option><option value="NFE">NF-e</option></select></div>
+            <div class="form-group"><label>Vendedor *</label><select id="pedSeller"></select></div>
+            <div class="form-group"><label>Tabela de Preço</label><input type="text" id="pedTabelaPreco" /></div>
+            <div class="form-group"><label>Tipo Operação</label><input type="text" id="pedTipoOperacao" placeholder="Ex: Venda" /></div>
+            <div class="form-group"><label>Segmento</label><input type="text" id="pedSegmento" /></div>
+            <div class="form-group"><label>Frete</label><select id="pedFrete"><option value="9">Sem frete</option><option value="0">Emitente (CIF)</option><option value="1">Destinatário (FOB)</option></select></div>
+            <div class="form-group"><label>CPF na nota?</label><select id="pedCpfNota"><option value="NAO">Não</option><option value="SIM">Sim</option></select></div>
+            <div class="form-group"><label>Indicador de Presença</label><select id="pedIndicadorPresenca"><option value="1">Presencial</option><option value="2">Internet</option><option value="4">Entrega a domicílio</option><option value="9">Não presencial</option></select></div>
+            <div class="form-group"><label>Finalidade</label><select id="pedFinalidade"><option value="1">Normal</option><option value="2">Complementar</option><option value="3">Ajuste</option><option value="4">Devolução</option></select></div>
             <div class="form-group"><label>Itens / Descrição</label><input type="text" id="pedItems" placeholder="Ex: 1x REALME 12" /></div>
+            <div class="form-group"><label>Cód. Barras (item)</label><input type="text" id="pedBarcode" /></div>
+            <div class="form-group"><label>Quantidade</label><input type="number" id="pedQtd" min="1" value="1" /></div>
+            <div class="form-group"><label>Desconto (R$)</label><input type="number" id="pedDesconto" step="0.01" min="0" /></div>
             <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="pedTotal" step="0.01" min="0" /></div>
           </div>
           <div class="form-actions">
@@ -865,42 +880,28 @@
           <div class="card-header"><h3 id="productFormTitle">Novo Produto</h3></div>
           <input type="hidden" id="productId" />
           <div class="form-grid">
-            <div class="form-group">
-              <label>Nome</label>
-              <input type="text" id="productName" />
-            </div>
-            <div class="form-group">
-              <label>Preço de Venda (R$)</label>
-              <input type="number" id="productPrice" step="0.01" min="0" />
-            </div>
-            <div class="form-group">
-              <label>Preço de Custo (R$)</label>
-              <input type="number" id="productCostPrice" step="0.01" min="0" />
-            </div>
-            <div class="form-group">
-              <label>Código de Barras</label>
-              <input type="text" id="productBarcode" placeholder="EAN/GTIN" />
-            </div>
-            <div class="form-group">
-              <label>NCM</label>
-              <input type="text" id="productNcm" placeholder="8517120000" maxlength="10" />
-            </div>
-            <div class="form-group">
-              <label>CFOP</label>
-              <input type="text" id="productCfop" placeholder="5102" maxlength="4" />
-            </div>
-            <div class="form-group">
-              <label>Categoria</label>
-              <input type="text" id="productCategory" placeholder="Smartphones" />
-            </div>
-            <div class="form-group">
-              <label>Unidade</label>
-              <select id="productUnit">
-                <option value="UN">UN</option>
-                <option value="PC">PC</option>
-                <option value="CX">CX</option>
-              </select>
-            </div>
+            <div class="form-group"><label>Código</label><input type="text" id="productCodigo" /></div>
+            <div class="form-group"><label>Nome *</label><input type="text" id="productName" /></div>
+            <div class="form-group"><label>Código EAN</label><input type="text" id="productBarcode" placeholder="EAN/GTIN" /></div>
+            <div class="form-group"><label>Código DUN</label><input type="text" id="productDun" /></div>
+            <div class="form-group"><label>Unidade de medida</label><select id="productUnit"><option value="UN">UN</option><option value="PC">PC</option><option value="CX">CX</option><option value="KG">KG</option></select></div>
+            <div class="form-group"><label>Grupo</label><input type="text" id="productGrupo" placeholder="Ex: Smartphones" /></div>
+            <div class="form-group"><label>Subgrupo</label><input type="text" id="productSubgrupo" /></div>
+            <div class="form-group"><label>Categoria</label><input type="text" id="productCategory" placeholder="Smartphones" /></div>
+            <div class="form-group"><label>NCM</label><input type="text" id="productNcm" placeholder="8517120000" maxlength="10" /></div>
+            <div class="form-group"><label>CFOP</label><input type="text" id="productCfop" placeholder="5102" maxlength="4" /></div>
+            <div class="form-group"><label>Tipo de custo</label><select id="productTipoCusto"><option value="MANUAL">Manual</option><option value="AUTOMATICO">Automático</option></select></div>
+            <div class="form-group"><label>Preço de Custo (R$)</label><input type="number" id="productCostPrice" step="0.01" min="0" /></div>
+            <div class="form-group"><label>Preço médio (R$)</label><input type="number" id="productPrecoMedio" step="0.01" min="0" /></div>
+            <div class="form-group"><label>Preço de Venda (R$) *</label><input type="number" id="productPrice" step="0.01" min="0" /></div>
+            <div class="form-group"><label>Valor venda sugerido (R$)</label><input type="number" id="productVendaSugerido" step="0.01" min="0" /></div>
+            <div class="form-group"><label>Estoque mínimo</label><input type="number" id="productEstoqueMin" min="0" /></div>
+            <div class="form-group"><label>Estoque máximo</label><input type="number" id="productEstoqueMax" min="0" /></div>
+            <div class="form-group"><label>Peso líquido (kg)</label><input type="number" id="productPesoLiq" step="0.001" min="0" /></div>
+            <div class="form-group"><label>Peso bruto (kg)</label><input type="number" id="productPesoBruto" step="0.001" min="0" /></div>
+            <div class="form-group"><label>Movimenta estoque?</label><select id="productMovEstoque"><option value="SIM">Sim</option><option value="NAO">Não</option></select></div>
+            <div class="form-group"><label>Permite estoque negativo?</label><select id="productEstNegativo"><option value="NAO">Não</option><option value="SIM">Sim</option></select></div>
+            <div class="form-group full-span"><label>Observações</label><input type="text" id="productObs" /></div>
           </div>
           <div class="form-actions">
             <button class="btn btnPrimary" onclick="submitProduct()">Salvar</button>

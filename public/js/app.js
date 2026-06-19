@@ -1011,24 +1011,24 @@ async function loadCr() {
 
 // ==================== PRODUCTS ====================
 
+const PRODUCT_FIELDS = {
+  productCodigo: 'codigo', productName: 'name', productBarcode: 'barcode', productDun: 'codigo_dun',
+  productUnit: 'unit', productGrupo: 'grupo', productSubgrupo: 'subgrupo', productCategory: 'category',
+  productNcm: 'ncm', productCfop: 'cfop', productTipoCusto: 'tipo_custo', productCostPrice: 'cost_price',
+  productPrecoMedio: 'preco_medio', productPrice: 'price', productVendaSugerido: 'venda_sugerido',
+  productEstoqueMin: 'estoque_min', productEstoqueMax: 'estoque_max', productPesoLiq: 'peso_liquido',
+  productPesoBruto: 'peso_bruto', productMovEstoque: 'movimenta_estoque', productEstNegativo: 'estoque_negativo',
+  productObs: 'observacoes',
+};
+const PRODUCT_NUM = ['cost_price', 'preco_medio', 'price', 'venda_sugerido', 'estoque_min', 'estoque_max', 'peso_liquido', 'peso_bruto'];
+
 function showProductForm(product) {
   $('productId').value = product ? product.id : '';
   $('productFormTitle').textContent = product ? 'Editar Produto' : 'Novo Produto';
-  if (product) {
-    $('productName').value = product.name;
-    $('productPrice').value = product.price;
-    $('productCostPrice').value = product.cost_price || '';
-    $('productBarcode').value = product.barcode || '';
-    $('productNcm').value = product.ncm || '';
-    $('productCfop').value = product.cfop || '';
-    $('productCategory').value = product.category || '';
-    $('productUnit').value = product.unit || 'UN';
-  } else {
-    ['productName', 'productPrice', 'productCostPrice', 'productBarcode', 'productNcm', 'productCfop', 'productCategory'].forEach(id => { const el = $(id); if (el) el.value = ''; });
-    $('productNcm').value = '8517120000';
-    $('productCfop').value = '5102';
-    $('productUnit').value = 'UN';
-  }
+  Object.entries(PRODUCT_FIELDS).forEach(([id, key]) => {
+    const el = $(id); if (el) el.value = product ? (product[key] ?? '') : '';
+  });
+  if (!product) { $('productNcm').value = '8517120000'; $('productCfop').value = '5102'; $('productUnit').value = 'UN'; }
   $('productFormWrap').classList.remove('hidden');
 }
 
@@ -1036,17 +1036,12 @@ function hideProductForm() { $('productFormWrap').classList.add('hidden'); }
 
 async function submitProduct() {
   const id = $('productId').value;
-  const payload = {
-    name: $('productName').value,
-    price: Number($('productPrice').value),
-    cost_price: Number($('productCostPrice').value || 0),
-    barcode: $('productBarcode').value,
-    ncm: $('productNcm').value,
-    cfop: $('productCfop').value,
-    category: $('productCategory').value,
-    unit: $('productUnit').value,
-    active: 1,
-  };
+  const payload = { active: 1 };
+  Object.entries(PRODUCT_FIELDS).forEach(([elId, key]) => {
+    let v = ($(elId) || {}).value || '';
+    if (PRODUCT_NUM.includes(key)) v = Number(v || 0);
+    payload[key] = v;
+  });
   if (!payload.name || !payload.price) return showToast('Nome e preço são obrigatórios', 'error');
   try {
     const method = id ? 'PUT' : 'POST';
@@ -1370,7 +1365,14 @@ async function submitPedido() {
     customer_id: $('pedCustomer').value ? Number($('pedCustomer').value) : null,
     seller_id: $('pedSeller').value ? Number($('pedSeller').value) : null,
     tipo: $('pedTipo').value,
-    items: [{ desc: $('pedItems').value }],
+    tabela_preco: $('pedTabelaPreco').value,
+    tipo_operacao: $('pedTipoOperacao').value,
+    segmento: $('pedSegmento').value,
+    frete: $('pedFrete').value,
+    cpf_na_nota: $('pedCpfNota').value,
+    indicador_presenca: $('pedIndicadorPresenca').value,
+    finalidade: $('pedFinalidade').value,
+    items: [{ desc: $('pedItems').value, barcode: $('pedBarcode').value, qtd: Number($('pedQtd').value || 1), desconto: Number($('pedDesconto').value || 0) }],
     total_value: Number($('pedTotal').value || 0),
   };
   if (!payload.store_id) return showToast('Selecione a loja', 'error');
@@ -1704,6 +1706,25 @@ const CAD = {
     { k: 'valor', l: 'Valor (R$)', t: 'number' },
     { k: 'vencimento', l: 'Vencimento (AAAA-MM-DD)', t: 'text' },
   ] },
+  equipamentos_impressao: { title: 'Equipamento de Impressão', fields: [
+    { k: 'name', l: 'Nome', t: 'text' },
+    { k: 'tipo', l: 'Tipo', t: 'select', o: ['TERMICA', 'MATRICIAL', 'A4', 'CUPOM'] },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+  ] },
+  locais_impressao: { title: 'Local de Impressão', fields: [
+    { k: 'name', l: 'Local', t: 'text' },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+  ] },
+  taxas_pix: { title: 'Taxa Pix', fields: [
+    { k: 'name', l: 'Descrição', t: 'text' },
+    { k: 'percentual', l: 'Taxa (%)', t: 'number' },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+  ] },
+  tabelas_preco: { title: 'Tabela de Preço', fields: [
+    { k: 'name', l: 'Nome', t: 'text' },
+    { k: 'store_id', l: 'Loja', t: 'store' },
+  ] },
+  segmentos: { title: 'Segmento', fields: [{ k: 'name', l: 'Segmento', t: 'text' }] },
 };
 
 function storeName(id) { return (state.stores.find(s => s.id === Number(id)) || {}).name || id; }

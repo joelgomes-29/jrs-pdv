@@ -1,9 +1,22 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const fs = require('fs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+
+// Postgres/Supabase — usado para dados pessoais (clientes/fornecedores com CPF),
+// que NÃO devem ficar no db.json versionado. Se a conexão falhar, as rotas caem
+// para o JSON como fallback.
+let pool = null;
+let pgReady = false;
+try {
+  pool = require('./db');
+  pool.query('SELECT 1').then(() => { pgReady = true; console.log('Contatos: usando Postgres/Supabase.'); })
+    .catch(e => { pgReady = false; console.log('Contatos: Postgres indisponível, usando JSON. ' + e.message); });
+} catch (e) {
+  console.log('Contatos: db.js ausente, usando JSON.');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -61,14 +74,22 @@ app.post('/api/login', (req, res) => {
 
 // ======================== BOOTSTRAP ========================
 
-app.get('/api/bootstrap', auth, (req, res) => {
+app.get('/api/bootstrap', auth, async (req, res) => {
   const db = loadDb();
+  let customers = db.customers || [];
+  let suppliers = db.suppliers || [];
+  if (pgReady) {
+    try {
+      customers = (await pool.query('SELECT * FROM clientes WHERE active = 1 ORDER BY name')).rows;
+      suppliers = (await pool.query('SELECT * FROM fornecedores WHERE active = 1 ORDER BY name')).rows;
+    } catch (e) { /* mantém JSON */ }
+  }
   res.json({
     stores: db.stores.filter(s => s.active),
     products: db.products.filter(p => p.active),
     sellers: db.sellers.filter(s => s.active),
-    customers: db.customers || [],
-    suppliers: db.suppliers || [],
+    customers,
+    suppliers,
     finance_categories: db.finance_categories || [],
     employees: db.employees || [],
   });
@@ -133,14 +154,46 @@ app.delete('/api/products/:id', auth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ======================== CONTATOS (Postgres p/ dados pessoais) ========================
+// Nomes de tabela são constantes fixas; colunas vêm de allowlist; valores
+// parametrizados ($1..) — seguro contra injeção.
+const FORN_COLS = ['codigo', 'name', 'razao_social', 'tipo', 'cnpj', 'inscricao_estadual', 'inscricao_municipal', 'email', 'fone', 'celular', 'cep', 'endereco', 'numero', 'bairro', 'cidade', 'uf'];
+const CLI_COLS = ['codigo', 'name', 'razao_social', 'tipo_pessoa', 'cpf', 'email', 'fone', 'celular', 'inscricao_estadual', 'inscricao_municipal', 'ramo_atividade', 'cep', 'endereco', 'numero', 'bairro', 'cidade', 'uf'];
+
+async function pgList(table) {
+  const r = await pool.query(`SELECT * FROM ${table} WHERE active = 1 ORDER BY name`);
+  return r.rows;
+}
+async function pgInsert(table, cols, body) {
+  const keys = cols.filter(c => body[c] !== undefined && body[c] !== '');
+  if (!keys.length) keys.push('name');
+  const vals = keys.map(c => body[c] ?? '');
+  const ph = keys.map((_, i) => '$' + (i + 1));
+  const r = await pool.query(`INSERT INTO ${table}(${keys.join(',')}) VALUES(${ph.join(',')}) RETURNING *`, vals);
+  return r.rows[0];
+}
+async function pgUpdate(table, cols, id, body) {
+  const keys = cols.filter(c => body[c] !== undefined);
+  const set = keys.map((c, i) => `${c}=$${i + 1}`);
+  const vals = keys.map(c => body[c]);
+  vals.push(id);
+  const r = await pool.query(`UPDATE ${table} SET ${set.join(',')} WHERE id=$${vals.length} RETURNING *`, vals);
+  return r.rows[0];
+}
+
 // ======================== SUPPLIERS ========================
 
-app.get('/api/suppliers', auth, (req, res) => {
-  const db = loadDb();
-  res.json(db.suppliers || []);
+app.get('/api/suppliers', auth, async (req, res) => {
+  try {
+    if (pgReady) return res.json(await pgList('fornecedores'));
+  } catch (e) { /* fallback */ }
+  res.json(loadDb().suppliers || []);
 });
 
-app.post('/api/suppliers', auth, (req, res) => {
+app.post('/api/suppliers', auth, async (req, res) => {
+  try {
+    if (pgReady) return res.json(await pgInsert('fornecedores', FORN_COLS, req.body));
+  } catch (e) { return res.status(500).json({ error: e.message }); }
   const db = loadDb();
   if (!db.suppliers) db.suppliers = [];
   const supplier = { id: nextId(db.suppliers), active: 1, created_at: now(), ...req.body };
@@ -149,7 +202,10 @@ app.post('/api/suppliers', auth, (req, res) => {
   res.json(supplier);
 });
 
-app.put('/api/suppliers/:id', auth, (req, res) => {
+app.put('/api/suppliers/:id', auth, async (req, res) => {
+  try {
+    if (pgReady) return res.json(await pgUpdate('fornecedores', FORN_COLS, Number(req.params.id), req.body));
+  } catch (e) { return res.status(500).json({ error: e.message }); }
   const db = loadDb();
   const idx = (db.suppliers || []).findIndex(s => s.id === Number(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Fornecedor não encontrado' });
@@ -158,7 +214,10 @@ app.put('/api/suppliers/:id', auth, (req, res) => {
   res.json(db.suppliers[idx]);
 });
 
-app.delete('/api/suppliers/:id', auth, (req, res) => {
+app.delete('/api/suppliers/:id', auth, async (req, res) => {
+  try {
+    if (pgReady) { await pool.query('UPDATE fornecedores SET active=0 WHERE id=$1', [Number(req.params.id)]); return res.json({ ok: true }); }
+  } catch (e) { return res.status(500).json({ error: e.message }); }
   const db = loadDb();
   const idx = (db.suppliers || []).findIndex(s => s.id === Number(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Fornecedor não encontrado' });
@@ -193,12 +252,17 @@ app.put('/api/sellers/:id', auth, (req, res) => {
 
 // ======================== CUSTOMERS ========================
 
-app.get('/api/customers', auth, (req, res) => {
-  const db = loadDb();
-  res.json(db.customers || []);
+app.get('/api/customers', auth, async (req, res) => {
+  try {
+    if (pgReady) return res.json(await pgList('clientes'));
+  } catch (e) { /* fallback */ }
+  res.json(loadDb().customers || []);
 });
 
-app.post('/api/customers', auth, (req, res) => {
+app.post('/api/customers', auth, async (req, res) => {
+  try {
+    if (pgReady) return res.json(await pgInsert('clientes', CLI_COLS, req.body));
+  } catch (e) { return res.status(500).json({ error: e.message }); }
   const db = loadDb();
   if (!db.customers) db.customers = [];
   const customer = { id: nextId(db.customers), created_at: now(), ...req.body };
@@ -207,7 +271,10 @@ app.post('/api/customers', auth, (req, res) => {
   res.json(customer);
 });
 
-app.put('/api/customers/:id', auth, (req, res) => {
+app.put('/api/customers/:id', auth, async (req, res) => {
+  try {
+    if (pgReady) return res.json(await pgUpdate('clientes', CLI_COLS, Number(req.params.id), req.body));
+  } catch (e) { return res.status(500).json({ error: e.message }); }
   const db = loadDb();
   const idx = (db.customers || []).findIndex(c => c.id === Number(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Cliente não encontrado' });

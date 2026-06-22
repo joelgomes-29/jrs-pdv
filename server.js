@@ -283,6 +283,21 @@ app.put('/api/customers/:id', auth, async (req, res) => {
   res.json(db.customers[idx]);
 });
 
+// ======================== IMPORT EM MASSA (contatos) ========================
+// Importação de clientes/fornecedores em lote (requer login). Usado pela
+// migração via CSV exportado do sistema antigo.
+app.post('/api/import/:tipo/bulk', auth, async (req, res) => {
+  if (!pgReady) return res.status(400).json({ error: 'Postgres indisponível' });
+  const table = req.params.tipo === 'clientes' ? 'clientes' : 'fornecedores';
+  const cols = req.params.tipo === 'clientes' ? CLI_COLS : FORN_COLS;
+  const items = Array.isArray(req.body.items) ? req.body.items : [];
+  let inserted = 0, errors = 0;
+  for (const it of items) {
+    try { await pgInsert(table, cols, it); inserted++; } catch (e) { errors++; }
+  }
+  res.json({ inserted, errors, total: items.length });
+});
+
 // ======================== IMEI ========================
 
 app.get('/api/imeis', auth, (req, res) => {

@@ -110,6 +110,7 @@ function populateAllStoreSelects() {
     'nfeStore', 'nfeListStore', 'cfgStore', 'finStore', 'cpStore',
     'crStore', 'salesFilterStore', 'rpStore', 'sellerStoreId',
     'pedStore', 'caixaStore', 'fcStore', 'invStore', 'compStore',
+    'rsellerStore', 'rentStore',
   ];
   storeSelects.forEach(id => {
     const el = $(id);
@@ -182,6 +183,8 @@ function navigateTo(section) {
     'caixa': 'Caixa', 'fluxo-caixa': 'Fluxo de Caixa',
     'inventario': 'Inventário', 'compras': 'Compras',
     'saida': 'Saída de Material', 'defeito': 'Produtos com Defeito',
+    'report-seller': 'Faturamento por Vendedor', 'report-receivable': 'Saldo a Receber por Cliente',
+    'report-entries': 'Relatório de Entradas',
   };
   $('topbarTitle').textContent = titles[section] || section;
   state.currentSection = section;
@@ -215,6 +218,9 @@ function navigateTo(section) {
     'compras': loadCompras,
     'saida': () => {},
     'defeito': loadDefeito,
+    'report-seller': loadReportSeller,
+    'report-receivable': loadReportReceivable,
+    'report-entries': loadReportEntries,
   };
   if (loaders[section]) loaders[section]();
 }
@@ -1592,6 +1598,53 @@ async function loadDefeito() {
       rows.reverse().map(u => [u.imei, prod(u.product_id), store(u.store_id), u.saida_motivo || '—', fmtDate(u.saida_at)])
     );
   } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ==================== RELATÓRIOS EXTRAS ====================
+
+async function loadReportSeller() {
+  const storeId = $('rsellerStore')?.value || '';
+  const start = $('rsellerStart')?.value || '';
+  const end = $('rsellerEnd')?.value || '';
+  let url = '/api/reports/sales-by-seller?';
+  if (storeId) url += `store_id=${storeId}&`;
+  if (start) url += `start=${start}&`;
+  if (end) url += `end=${end}&`;
+  try {
+    const data = await api('GET', url);
+    $('reportSellerTable').innerHTML = makeTable(
+      ['Vendedor', 'Qtd', 'Total'],
+      data.map(r => [r.seller_name, r.qty, fmt(r.total)])
+    );
+  } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+async function loadReportReceivable() {
+  try {
+    const data = await api('GET', '/api/reports/receivable-by-customer');
+    $('reportReceivableTable').innerHTML = makeTable(
+      ['Cliente', 'CPF/CNPJ', 'Contas', 'Total a Receber'],
+      data.map(r => [r.customer_name, r.cpf || '—', r.count, fmt(r.total)])
+    );
+  } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+async function loadReportEntries() {
+  const storeId = $('rentStore')?.value || '';
+  const start = $('rentStart')?.value || '';
+  const end = $('rentEnd')?.value || '';
+  let url = '/api/reports/note-entries?';
+  if (storeId) url += `store_id=${storeId}&`;
+  if (start) url += `start=${start}&`;
+  if (end) url += `end=${end}&`;
+  try {
+    const data = await api('GET', url);
+    const store = id => (state.stores.find(s => s.id === id) || {}).name || id;
+    $('reportEntriesTable').innerHTML = makeTable(
+      ['NF', 'Loja', 'Qtd Aparelhos', 'Valor', 'Data'],
+      data.reverse().map(e => [e.nota_number || `#${e.id}`, store(e.store_id), e.qty, fmt(e.total_value), fmtDate(e.created_at)])
+    );
+  } catch (e) { showToast('Erro: ' + e.message, 'error'); }
 }
 
 // ==================== CADASTROS GENÉRICOS (espelho RAJ) ====================

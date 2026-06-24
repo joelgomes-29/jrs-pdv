@@ -133,6 +133,9 @@
         <a class="nav-item" data-section="sales"><span class="nav-icon">&#9660;</span> Vendas</a>
         <a class="nav-item" data-section="report-product"><span class="nav-icon">&#9660;</span> Faturamento por item</a>
         <a class="nav-item" data-section="report-store"><span class="nav-icon">&#9660;</span> Faturamento por Loja</a>
+        <a class="nav-item" data-section="report-seller"><span class="nav-icon">&#9660;</span> Faturamento por Vendedor</a>
+        <a class="nav-item" data-section="report-receivable"><span class="nav-icon">&#9660;</span> Saldo a Receber por Cliente</a>
+        <a class="nav-item" data-section="report-entries"><span class="nav-icon">&#9660;</span> Relatório de Entradas</a>
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -302,6 +305,45 @@
       <section id="sec-defeito" class="section">
         <div class="section-header"><h2>Produtos com Defeito</h2></div>
         <div class="card"><div class="card-header"><h3>IMEIs marcados como defeito</h3></div><div id="defeitoTable" class="table-wrap"></div></div>
+      </section>
+
+      <!-- RELATÓRIO FAT. POR VENDEDOR -->
+      <section id="sec-report-seller" class="section">
+        <div class="section-header"><h2>Faturamento por Vendedor</h2></div>
+        <div class="card">
+          <div class="card-header"><h3>Relatório</h3>
+            <div class="card-actions">
+              <select id="rsellerStore" onchange="loadReportSeller()"><option value="">Todas as lojas</option></select>
+              <input type="date" id="rsellerStart" onchange="loadReportSeller()" />
+              <input type="date" id="rsellerEnd" onchange="loadReportSeller()" />
+            </div>
+          </div>
+          <div id="reportSellerTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- RELATÓRIO SALDO A RECEBER POR CLIENTE -->
+      <section id="sec-report-receivable" class="section">
+        <div class="section-header"><h2>Saldo a Receber por Cliente</h2></div>
+        <div class="card">
+          <div class="card-header"><h3>Pendências por cliente</h3></div>
+          <div id="reportReceivableTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- RELATÓRIO DE ENTRADAS -->
+      <section id="sec-report-entries" class="section">
+        <div class="section-header"><h2>Relatório de Entradas de Nota</h2></div>
+        <div class="card">
+          <div class="card-header"><h3>Entradas</h3>
+            <div class="card-actions">
+              <select id="rentStore" onchange="loadReportEntries()"><option value="">Todas as lojas</option></select>
+              <input type="date" id="rentStart" onchange="loadReportEntries()" />
+              <input type="date" id="rentEnd" onchange="loadReportEntries()" />
+            </div>
+          </div>
+          <div id="reportEntriesTable" class="table-wrap"></div>
+        </div>
       </section>
 
       <!-- DASHBOARD -->

@@ -1093,6 +1093,61 @@ app.get('/api/reports/stock-summary', auth, (req, res) => {
   res.json(summary);
 });
 
+// Faturamento por vendedor
+app.get('/api/reports/sales-by-seller', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, start, end } = req.query;
+  let sales = db.sales || [];
+  if (store_id) sales = sales.filter(s => s.store_id === Number(store_id));
+  if (start) sales = sales.filter(s => s.created_at >= start);
+  if (end) sales = sales.filter(s => s.created_at <= end + ' 23:59:59');
+  const rep = {};
+  for (const s of sales) {
+    const key = s.seller_id || 0;
+    if (!rep[key]) rep[key] = { seller_id: key, seller_name: s.seller_name || 'Sem vendedor', qty: 0, total: 0 };
+    rep[key].qty++;
+    rep[key].total += s.price;
+  }
+  res.json(Object.values(rep).sort((a, b) => b.total - a.total));
+});
+
+// Saldo a receber por cliente (contas a receber pendentes agrupadas)
+app.get('/api/reports/receivable-by-customer', auth, async (req, res) => {
+  const db = loadDb();
+  const pend = (db.contas_receber || []).filter(c => c.status === 'PENDING');
+  let nameMap = {};
+  if (pgReady) {
+    try {
+      const r = await pool.query('SELECT id, name, cpf FROM clientes');
+      r.rows.forEach(c => { nameMap[c.id] = { name: c.name, cpf: c.cpf }; });
+    } catch (e) { /* ignore */ }
+  }
+  const rep = {};
+  for (const c of pend) {
+    const key = c.customer_id || 0;
+    const info = nameMap[key] || {};
+    if (!rep[key]) rep[key] = { customer_id: key, customer_name: info.name || 'Sem cliente', cpf: info.cpf || '', count: 0, total: 0 };
+    rep[key].count++;
+    rep[key].total += Number(c.value || 0);
+  }
+  res.json(Object.values(rep).sort((a, b) => b.total - a.total));
+});
+
+// Relatório de entradas de nota
+app.get('/api/reports/note-entries', auth, (req, res) => {
+  const db = loadDb();
+  const { store_id, start, end } = req.query;
+  let entries = db.note_entries || [];
+  if (store_id) entries = entries.filter(e => e.store_id === Number(store_id));
+  if (start) entries = entries.filter(e => (e.created_at || '') >= start);
+  if (end) entries = entries.filter(e => (e.created_at || '') <= end + ' 23:59:59');
+  res.json(entries.map(e => ({
+    id: e.id, nota_number: e.nota_number, store_id: e.store_id,
+    total_value: e.total_value, qty: (e.items || []).reduce((a, i) => a + (i.qty || 0), 0),
+    created_at: e.created_at,
+  })));
+});
+
 // ======================== DASHBOARD ========================
 
 app.get('/api/dashboard', auth, (req, res) => {

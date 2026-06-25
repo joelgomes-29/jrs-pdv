@@ -1198,16 +1198,30 @@ async function submitCustomer() {
 
 async function loadCustomers() {
   try {
-    const customers = await api('GET', '/api/customers');
-    state.customers = customers;
-    $('customerTable').innerHTML = makeTable(
-      ['Nome', 'CPF/CNPJ', 'Telefone', 'E-mail', 'Cidade', 'Ações'],
-      customers.map(c => [
-        c.name, c.cpf || '—', c.fone || '—', c.email || '—', c.cidade || '—',
-        `<button class="btn btnGhost btn-sm" onclick='showCustomerForm(${JSON.stringify(c)})'>Editar</button>`,
-      ])
-    );
+    state.customers = await api('GET', '/api/customers');
+    renderCustomers();
   } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+function renderCustomers() {
+  const q = ($('customerSearch')?.value || '').toLowerCase().trim();
+  let list = state.customers || [];
+  if (q) list = list.filter(c => `${c.name || ''} ${c.razao_social || ''} ${c.cpf || ''} ${c.cidade || ''} ${c.email || ''}`.toLowerCase().includes(q));
+  const total = list.length;
+  const shown = list.slice(0, 100);
+  if ($('customerListTitle')) $('customerListTitle').textContent = `Clientes (${total})`;
+  $('customerTable').innerHTML = makeTable(
+    ['Nome', 'CPF/CNPJ', 'Telefone', 'E-mail', 'Cidade', 'Ações'],
+    shown.map(c => [
+      c.name, c.cpf || '—', c.fone || c.celular || '—', c.email || '—', c.cidade || '—',
+      `<button class="btn btnGhost btn-sm" onclick="editCustomer(${c.id})">Editar</button>`,
+    ])
+  ) + (total > 100 ? `<div class="empty-state">Mostrando 100 de ${total}. Use a busca acima para filtrar.</div>` : '');
+}
+
+function editCustomer(id) {
+  const c = (state.customers || []).find(x => x.id === id);
+  if (c) showCustomerForm(c);
 }
 
 // ==================== SELLERS ====================

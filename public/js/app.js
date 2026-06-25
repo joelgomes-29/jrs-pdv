@@ -432,6 +432,8 @@ async function loadImeis() {
     if (search) units = units.filter(u => u.imei.includes(search));
     const store = id => (state.stores.find(s => s.id === id) || {}).name || id;
     const prod = id => (state.products.find(p => p.id === id) || {}).name || id;
+    const totalU = units.length;
+    units = units.slice(0, 300);
     $('imeiTable').innerHTML = makeTable(
       ['IMEI', 'Produto', 'Loja', 'Cor', 'Status', 'Data'],
       units.map(u => [
@@ -439,7 +441,7 @@ async function loadImeis() {
         u.status === 'AVAILABLE' ? '<span class="badge badge-green">Disponível</span>' : '<span class="badge badge-red">Vendido</span>',
         fmtDate(u.created_at),
       ])
-    );
+    ) + (totalU > 300 ? `<div class="empty-state">Mostrando 300 de ${totalU}. Use os filtros/busca acima.</div>` : '');
   } catch (e) {
     showToast('Erro: ' + e.message, 'error');
   }
@@ -1142,16 +1144,30 @@ async function submitSupplier() {
 
 async function loadSuppliers() {
   try {
-    const suppliers = await api('GET', '/api/suppliers');
-    state.suppliers = suppliers;
-    $('supplierTable').innerHTML = makeTable(
-      ['Nome', 'CNPJ', 'E-mail', 'Telefone', 'Cidade', 'UF', 'Ações'],
-      suppliers.filter(s => s.active).map(s => [
-        s.name, s.cnpj || '—', s.email || '—', s.fone || '—', s.cidade || '—', s.uf || '—',
-        `<button class="btn btnGhost btn-sm" onclick='showSupplierForm(${JSON.stringify(s)})'>Editar</button>`,
-      ])
-    );
+    state.suppliers = await api('GET', '/api/suppliers');
+    renderSuppliers();
   } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+function renderSuppliers() {
+  const q = ($('supplierSearch')?.value || '').toLowerCase().trim();
+  let list = (state.suppliers || []).filter(s => s.active !== 0);
+  if (q) list = list.filter(s => `${s.name || ''} ${s.razao_social || ''} ${s.cnpj || ''} ${s.cidade || ''}`.toLowerCase().includes(q));
+  const total = list.length;
+  const shown = list.slice(0, 100);
+  if ($('supplierListTitle')) $('supplierListTitle').textContent = `Fornecedores (${total})`;
+  $('supplierTable').innerHTML = makeTable(
+    ['Nome', 'CNPJ', 'E-mail', 'Telefone', 'Cidade', 'UF', 'Ações'],
+    shown.map(s => [
+      s.name, s.cnpj || '—', s.email || '—', s.fone || s.celular || '—', s.cidade || '—', s.uf || '—',
+      `<button class="btn btnGhost btn-sm" onclick="editSupplier(${s.id})">Editar</button>`,
+    ])
+  ) + (total > 100 ? `<div class="empty-state">Mostrando 100 de ${total}. Use a busca acima para filtrar.</div>` : '');
+}
+
+function editSupplier(id) {
+  const s = (state.suppliers || []).find(x => x.id === id);
+  if (s) showSupplierForm(s);
 }
 
 // ==================== CUSTOMERS ====================
@@ -1325,14 +1341,16 @@ async function loadSales() {
   try {
     const sales = await api('GET', url);
     const store = id => (state.stores.find(s => s.id === id) || {}).name || id;
+    const total = sales.length;
+    const shown = sales.reverse().slice(0, 300);
     $('salesTable').innerHTML = makeTable(
       ['Data', 'Produto', 'IMEI', 'Loja', 'Vendedor', 'Pagamento', 'Valor'],
-      sales.reverse().map(s => [
+      shown.map(s => [
         fmtDate(s.created_at), s.product_name, s.imei,
         store(s.store_id), s.seller_name || '—',
         payLabel[s.payment_method] || s.payment_method, fmt(s.price),
       ])
-    );
+    ) + (total > 300 ? `<div class="empty-state">Mostrando as 300 mais recentes de ${total}. Use os filtros de loja/data.</div>` : '');
   } catch (e) { showToast('Erro: ' + e.message, 'error'); }
 }
 

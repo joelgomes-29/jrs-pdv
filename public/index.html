@@ -993,7 +993,10 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>Fornecedores</h3></div>
+          <div class="card-header">
+            <h3 id="supplierListTitle">Fornecedores</h3>
+            <input type="text" id="supplierSearch" placeholder="Buscar nome, CNPJ, cidade..." oninput="renderSuppliers()" style="width:260px" />
+          </div>
           <div id="supplierTable" class="table-wrap"></div>
         </div>
       </section>

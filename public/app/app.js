@@ -155,8 +155,9 @@ async function lookupImei() {
       $('prodName').textContent = prod ? prod.name : 'Produto';
       $('prodColor').textContent = unit.color || '';
       $('prodStorage').textContent = unit.storage || '';
-      $('prodPrice').textContent = fmt(prod ? prod.price : 0);
-      if (!$('price').value && prod) $('price').value = prod.price;
+      const pStore = (prod && prod.prices && prod.prices[storeId] > 0) ? prod.prices[storeId] : (prod ? prod.price : 0);
+      $('prodPrice').textContent = fmt(pStore);
+      if (!$('price').value && prod) $('price').value = pStore;
       $('prodCard').classList.remove('hidden');
       $('imeiHint').classList.add('hidden');
       updateTotal();

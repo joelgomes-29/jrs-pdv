@@ -299,9 +299,15 @@ function onSaleStoreChange() {
   updatePdvSummary();
 }
 
+function priceFor(product, storeId) {
+  if (product && product.prices && storeId && product.prices[storeId] > 0) return product.prices[storeId];
+  return product ? product.price : 0;
+}
+
 function onSaleProductChange() {
   const product = state.products.find(p => p.id === Number($('saleProduct').value));
-  if (product && !$('salePrice').value) $('salePrice').value = product.price;
+  const storeId = Number($('saleStore').value);
+  if (product && !$('salePrice').value) $('salePrice').value = priceFor(product, storeId);
   updatePdvSummary();
 }
 
@@ -315,7 +321,7 @@ async function lookupImei() {
     if (unit) {
       $('saleProduct').value = unit.product_id;
       const product = state.products.find(p => p.id === unit.product_id);
-      if (product && !$('salePrice').value) $('salePrice').value = product.price;
+      if (product && !$('salePrice').value) $('salePrice').value = priceFor(product, storeId);
     } else if (imei.length > 5) {
       showToast('IMEI não encontrado nesta loja', 'error');
     }

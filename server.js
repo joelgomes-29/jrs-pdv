@@ -1148,6 +1148,35 @@ app.get('/api/reports/note-entries', auth, (req, res) => {
   })));
 });
 
+// ======================== CONSULTA FINANCEIRA (dados importados do RAJ) ========================
+const FIN_TABLES = {
+  contas_receber: ['cliente', 'descricao', 'store_name', 'categoria', 'documento', 'status'],
+  contas_pagar: ['fornecedor', 'descricao', 'store_name', 'categoria', 'documento', 'status'],
+  notas_entrada: ['numero', 'fornecedor', 'store_name'],
+  notas_fiscais: ['numero', 'destinatario', 'store_name', 'tipo', 'documento', 'status'],
+};
+
+app.get('/api/fin/:table', auth, async (req, res) => {
+  const t = req.params.table;
+  if (!FIN_TABLES[t]) return res.status(400).json({ error: 'Tabela inválida' });
+  if (!pgReady) return res.json({ total: 0, soma: 0, rows: [] });
+  try {
+    const q = (req.query.q || '').trim();
+    const offset = Math.max(0, Number(req.query.offset || 0));
+    const limit = 100;
+    const scols = FIN_TABLES[t];
+    let where = '';
+    const params = [];
+    if (q) {
+      where = 'WHERE ' + scols.map((c, i) => `${c} ILIKE $${i + 1}`).join(' OR ');
+      scols.forEach(() => params.push('%' + q + '%'));
+    }
+    const agg = await pool.query(`SELECT count(*)::int c, COALESCE(sum(valor),0)::float s FROM ${t} ${where}`, params);
+    const rows = await pool.query(`SELECT * FROM ${t} ${where} ORDER BY id ASC LIMIT ${limit} OFFSET ${offset}`, params);
+    res.json({ total: agg.rows[0].c, soma: agg.rows[0].s, rows: rows.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ======================== DASHBOARD ========================
 
 app.get('/api/dashboard', auth, (req, res) => {

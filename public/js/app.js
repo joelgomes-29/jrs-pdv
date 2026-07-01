@@ -150,6 +150,18 @@ function navigateTo(section) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
+  // Consulta financeira importada do RAJ: fin:<tabela>
+  if (section.startsWith('fin:')) {
+    const table = section.slice(4);
+    $('sec-finconsulta').classList.add('active');
+    const navF = document.querySelector(`[data-section="${section}"]`);
+    if (navF) navF.classList.add('active');
+    state.currentSection = section;
+    $('topbarTitle').textContent = (FINCON[table] && FINCON[table].title) || 'Consulta';
+    openFinConsulta(table);
+    return;
+  }
+
   // Cadastros genéricos (espelho RAJ): cad:<colecao>
   if (section.startsWith('cad:')) {
     const name = section.slice(4);
@@ -1682,6 +1694,63 @@ async function loadReportEntries() {
       ['NF', 'Loja', 'Qtd Aparelhos', 'Valor', 'Data'],
       data.reverse().map(e => [e.nota_number || `#${e.id}`, store(e.store_id), e.qty, fmt(e.total_value), fmtDate(e.created_at)])
     );
+  } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+// ==================== CONSULTA FINANCEIRA (dados RAJ) ====================
+
+const FINCON = {
+  contas_receber: { title: 'Contas a Receber', cols: [
+    { k: 'cliente', l: 'Cliente' }, { k: 'store_name', l: 'Loja' }, { k: 'descricao', l: 'Descrição' },
+    { k: 'valor', l: 'Valor', money: true }, { k: 'vencimento', l: 'Vencimento' }, { k: 'status', l: 'Status' }] },
+  contas_pagar: { title: 'Contas a Pagar', cols: [
+    { k: 'fornecedor', l: 'Fornecedor' }, { k: 'descricao', l: 'Descrição' }, { k: 'documento', l: 'CPF/CNPJ' },
+    { k: 'valor', l: 'Valor', money: true }, { k: 'vencimento', l: 'Vencimento' }, { k: 'status', l: 'Status' }] },
+  notas_entrada: { title: 'Notas de Entrada', cols: [
+    { k: 'numero', l: 'NF' }, { k: 'fornecedor', l: 'Fornecedor' }, { k: 'store_name', l: 'Loja' },
+    { k: 'qtd_itens', l: 'Itens' }, { k: 'valor', l: 'Valor', money: true }, { k: 'data_entrada', l: 'Data' }] },
+  notas_fiscais: { title: 'Notas Fiscais', cols: [
+    { k: 'numero', l: 'Nº' }, { k: 'data_emissao', l: 'Data' }, { k: 'destinatario', l: 'Cliente/Forn.' },
+    { k: 'tipo', l: 'Movimento' }, { k: 'valor', l: 'Valor', money: true }, { k: 'status', l: 'Status' }] },
+};
+let finConState = { table: null, offset: 0, q: '', total: 0 };
+
+function openFinConsulta(table) {
+  finConState = { table, offset: 0, q: '', total: 0 };
+  const cfg = FINCON[table]; if (!cfg) return;
+  $('finConTitle').textContent = cfg.title;
+  $('finConListTitle').textContent = cfg.title;
+  $('finConSearch').value = '';
+  loadFinConsulta();
+}
+
+let finConTimer;
+function finConSearchDebounced() {
+  clearTimeout(finConTimer);
+  finConTimer = setTimeout(() => { finConState.offset = 0; finConState.q = $('finConSearch').value.trim(); loadFinConsulta(); }, 350);
+}
+
+function finConPage(dir) {
+  const next = finConState.offset + dir * 100;
+  if (next < 0 || next >= finConState.total) return;
+  finConState.offset = next;
+  loadFinConsulta();
+}
+
+async function loadFinConsulta() {
+  const { table, offset, q } = finConState;
+  const cfg = FINCON[table]; if (!cfg) return;
+  try {
+    const d = await api('GET', `/api/fin/${table}?offset=${offset}&q=${encodeURIComponent(q)}`);
+    finConState.total = d.total;
+    $('finConCards').innerHTML = `
+      <div class="kpi-card"><div class="kpi-icon" style="background:rgba(37,99,235,.15);color:#2563eb">#</div><div class="kpi-info"><div class="kpi-value">${d.total.toLocaleString('pt-BR')}</div><div class="kpi-label">Registros</div></div></div>
+      <div class="kpi-card"><div class="kpi-icon" style="background:rgba(34,197,94,.15);color:#22c55e">R$</div><div class="kpi-info"><div class="kpi-value">${fmt(d.soma)}</div><div class="kpi-label">Valor total</div></div></div>`;
+    $('finConTable').innerHTML = makeTable(cfg.cols.map(c => c.l), d.rows.map(r => cfg.cols.map(c => c.money ? fmt(r[c.k]) : (r[c.k] || '—'))));
+    const to = Math.min(offset + d.rows.length, d.total);
+    $('finConInfo').textContent = d.total ? `${offset + 1}–${to} de ${d.total.toLocaleString('pt-BR')}` : 'Nenhum registro';
+    $('finConPrev').disabled = offset <= 0;
+    $('finConNext').disabled = to >= d.total;
   } catch (e) { showToast('Erro: ' + e.message, 'error'); }
 }
 

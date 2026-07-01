@@ -63,6 +63,7 @@
         <div class="nav-group-title">Fiscal</div>
         <a class="nav-item" data-section="nfe-emit"><span class="nav-icon">&#9660;</span> Emitir NF-e</a>
         <a class="nav-item" data-section="nfe-list"><span class="nav-icon">&#9660;</span> NF-e Emitidas</a>
+        <a class="nav-item" data-section="fin:notas_fiscais"><span class="nav-icon">&#9660;</span> Notas Fiscais (RAJ)</a>
         <a class="nav-item" data-section="nfe-config"><span class="nav-icon">&#9660;</span> Config Fiscal NFE</a>
         <a class="nav-item" data-section="cad:tipos_operacao"><span class="nav-icon">&#9660;</span> Tipo Operação</a>
         <a class="nav-item" data-section="cad:series_nota"><span class="nav-icon">&#9660;</span> Série Nota</a>
@@ -81,8 +82,10 @@
       <div class="nav-group">
         <div class="nav-group-title">Financeiro</div>
         <a class="nav-item" data-section="finance"><span class="nav-icon">&#9660;</span> Lançamentos</a>
-        <a class="nav-item" data-section="contas-receber"><span class="nav-icon">&#9660;</span> Contas a Receber</a>
-        <a class="nav-item" data-section="contas-pagar"><span class="nav-icon">&#9660;</span> Contas a Pagar</a>
+        <a class="nav-item" data-section="fin:contas_receber"><span class="nav-icon">&#9660;</span> Contas a Receber</a>
+        <a class="nav-item" data-section="fin:contas_pagar"><span class="nav-icon">&#9660;</span> Contas a Pagar</a>
+        <a class="nav-item" data-section="contas-receber"><span class="nav-icon">&#9660;</span> Contas a Receber (nova)</a>
+        <a class="nav-item" data-section="contas-pagar"><span class="nav-icon">&#9660;</span> Contas a Pagar (nova)</a>
         <a class="nav-item" data-section="cad:bancos"><span class="nav-icon">&#9660;</span> Banco</a>
         <a class="nav-item" data-section="cad:contas_correntes"><span class="nav-icon">&#9660;</span> Conta Corrente</a>
         <a class="nav-item" data-section="cad:bandeiras_cartao"><span class="nav-icon">&#9660;</span> Bandeira Cartão</a>
@@ -103,6 +106,7 @@
       <div class="nav-group">
         <div class="nav-group-title">Suprimentos</div>
         <a class="nav-item" data-section="note-entry"><span class="nav-icon">&#9660;</span> Entrada de Nota</a>
+        <a class="nav-item" data-section="fin:notas_entrada"><span class="nav-icon">&#9660;</span> Notas de Entrada (RAJ)</a>
         <a class="nav-item" data-section="compras"><span class="nav-icon">&#9660;</span> Compras</a>
         <a class="nav-item" data-section="imei"><span class="nav-icon">&#9660;</span> IMEI · Entrada Direta</a>
         <a class="nav-item" data-section="movements"><span class="nav-icon">&#9660;</span> Transferências</a>
@@ -343,6 +347,24 @@
             </div>
           </div>
           <div id="reportEntriesTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- CONSULTA FINANCEIRA (dados RAJ) -->
+      <section id="sec-finconsulta" class="section">
+        <div class="section-header"><h2 id="finConTitle">Consulta</h2></div>
+        <div class="kpi-grid" id="finConCards"></div>
+        <div class="card">
+          <div class="card-header">
+            <h3 id="finConListTitle">Registros</h3>
+            <input type="text" id="finConSearch" placeholder="Buscar..." oninput="finConSearchDebounced()" style="width:280px" />
+          </div>
+          <div id="finConTable" class="table-wrap"></div>
+          <div class="form-actions" style="justify-content:space-between">
+            <button class="btn btnGhost btn-sm" id="finConPrev" onclick="finConPage(-1)">◀ Anteriores</button>
+            <span id="finConInfo" style="align-self:center;color:var(--text-muted);font-size:.8rem"></span>
+            <button class="btn btnGhost btn-sm" id="finConNext" onclick="finConPage(1)">Próximos ▶</button>
+          </div>
         </div>
       </section>
 

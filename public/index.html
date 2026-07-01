@@ -140,6 +140,7 @@
         <a class="nav-item" data-section="report-seller"><span class="nav-icon">&#9660;</span> Faturamento por Vendedor</a>
         <a class="nav-item" data-section="report-receivable"><span class="nav-icon">&#9660;</span> Saldo a Receber por Cliente</a>
         <a class="nav-item" data-section="report-entries"><span class="nav-icon">&#9660;</span> Relatório de Entradas</a>
+        <a class="nav-item" data-section="rajdata"><span class="nav-icon">&#9660;</span> Dados RAJ (todos)</a>
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -364,6 +365,27 @@
             <button class="btn btnGhost btn-sm" id="finConPrev" onclick="finConPage(-1)">◀ Anteriores</button>
             <span id="finConInfo" style="align-self:center;color:var(--text-muted);font-size:.8rem"></span>
             <button class="btn btnGhost btn-sm" id="finConNext" onclick="finConPage(1)">Próximos ▶</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- DADOS RAJ (genérico) -->
+      <section id="sec-rajdata" class="section">
+        <div class="section-header"><h2>Dados importados do RAJ</h2></div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><h3>Fontes disponíveis</h3></div>
+          <div style="padding:1rem;display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+            <select id="rajSourceSel" onchange="openRajSource(this.value)" style="min-width:280px"></select>
+            <input type="text" id="rajSearch" placeholder="Buscar em qualquer coluna..." oninput="rajSearchDebounced()" style="width:280px" />
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3 id="rajListTitle">Selecione uma fonte</h3></div>
+          <div id="rajTable" class="table-wrap"></div>
+          <div class="form-actions" style="justify-content:space-between">
+            <button class="btn btnGhost btn-sm" id="rajPrev" onclick="rajPage(-1)">◀ Anteriores</button>
+            <span id="rajInfo" style="align-self:center;color:var(--text-muted);font-size:.8rem"></span>
+            <button class="btn btnGhost btn-sm" id="rajNext" onclick="rajPage(1)">Próximos ▶</button>
           </div>
         </div>
       </section>

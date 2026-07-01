@@ -196,7 +196,7 @@ function navigateTo(section) {
     'inventario': 'Inventário', 'compras': 'Compras',
     'saida': 'Saída de Material', 'defeito': 'Produtos com Defeito',
     'report-seller': 'Faturamento por Vendedor', 'report-receivable': 'Saldo a Receber por Cliente',
-    'report-entries': 'Relatório de Entradas',
+    'report-entries': 'Relatório de Entradas', 'rajdata': 'Dados importados do RAJ',
   };
   $('topbarTitle').textContent = titles[section] || section;
   state.currentSection = section;
@@ -233,6 +233,7 @@ function navigateTo(section) {
     'report-seller': loadReportSeller,
     'report-receivable': loadReportReceivable,
     'report-entries': loadReportEntries,
+    'rajdata': loadRajSources,
   };
   if (loaders[section]) loaders[section]();
 }
@@ -1694,6 +1695,59 @@ async function loadReportEntries() {
       ['NF', 'Loja', 'Qtd Aparelhos', 'Valor', 'Data'],
       data.reverse().map(e => [e.nota_number || `#${e.id}`, store(e.store_id), e.qty, fmt(e.total_value), fmtDate(e.created_at)])
     );
+  } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+// ==================== DADOS RAJ GENÉRICOS ====================
+
+let rajState = { source: null, offset: 0, q: '', total: 0, columns: [] };
+
+async function loadRajSources() {
+  try {
+    const sources = await api('GET', '/api/raj/sources');
+    const sel = $('rajSourceSel');
+    sel.innerHTML = '<option value="">Selecione uma fonte...</option>' +
+      sources.map(s => `<option value="${s.source}">${s.source} (${s.total.toLocaleString('pt-BR')})</option>`).join('');
+    if (!sources.length) {
+      $('rajListTitle').textContent = 'Nenhum dado extra importado ainda';
+      $('rajTable').innerHTML = '<div class="empty-state">Exporte telas do RAJ (EXPORTAR CSV) para o Downloads e avise — elas aparecem aqui.</div>';
+    }
+  } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+function openRajSource(source) {
+  if (!source) return;
+  rajState = { source, offset: 0, q: '', total: 0, columns: [] };
+  $('rajSearch').value = '';
+  loadRajSource();
+}
+
+let rajTimer;
+function rajSearchDebounced() {
+  clearTimeout(rajTimer);
+  rajTimer = setTimeout(() => { rajState.offset = 0; rajState.q = $('rajSearch').value.trim(); loadRajSource(); }, 350);
+}
+
+function rajPage(dir) {
+  const next = rajState.offset + dir * 100;
+  if (next < 0 || next >= rajState.total) return;
+  rajState.offset = next;
+  loadRajSource();
+}
+
+async function loadRajSource() {
+  const { source, offset, q } = rajState;
+  if (!source) return;
+  try {
+    const d = await api('GET', `/api/raj/source/${encodeURIComponent(source)}?offset=${offset}&q=${encodeURIComponent(q)}`);
+    rajState.total = d.total;
+    const cols = d.columns.slice(0, 12); // limita colunas visíveis
+    $('rajListTitle').textContent = `${source} — ${d.total.toLocaleString('pt-BR')} registros`;
+    $('rajTable').innerHTML = makeTable(cols, d.rows.map(r => cols.map(c => r[c] || '—')));
+    const to = Math.min(offset + d.rows.length, d.total);
+    $('rajInfo').textContent = d.total ? `${offset + 1}–${to} de ${d.total.toLocaleString('pt-BR')}` : 'Nenhum registro';
+    $('rajPrev').disabled = offset <= 0;
+    $('rajNext').disabled = to >= d.total;
   } catch (e) { showToast('Erro: ' + e.message, 'error'); }
 }
 

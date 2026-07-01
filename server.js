@@ -1177,6 +1177,36 @@ app.get('/api/fin/:table', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ======================== DADOS RAJ GENÉRICOS (raj_import) ========================
+
+app.get('/api/raj/sources', auth, async (req, res) => {
+  if (!pgReady) return res.json([]);
+  try {
+    const r = await pool.query(`
+      SELECT source, MAX(titulo) titulo, count(*)::int total
+      FROM raj_import GROUP BY source ORDER BY source`);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/raj/source/:source', auth, async (req, res) => {
+  if (!pgReady) return res.json({ total: 0, rows: [], columns: [] });
+  try {
+    const source = req.params.source;
+    const q = (req.query.q || '').trim();
+    const offset = Math.max(0, Number(req.query.offset || 0));
+    const limit = 100;
+    let where = 'WHERE source = $1';
+    const params = [source];
+    if (q) { where += ' AND data::text ILIKE $2'; params.push('%' + q + '%'); }
+    const agg = await pool.query(`SELECT count(*)::int c FROM raj_import ${where}`, params);
+    const rows = await pool.query(`SELECT data FROM raj_import ${where} ORDER BY row_num ASC LIMIT ${limit} OFFSET ${offset}`, params);
+    const first = await pool.query('SELECT data FROM raj_import WHERE source = $1 ORDER BY row_num ASC LIMIT 1', [source]);
+    const columns = first.rows[0] ? Object.keys(first.rows[0].data) : [];
+    res.json({ total: agg.rows[0].c, columns, rows: rows.rows.map(r => r.data) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ======================== DASHBOARD ========================
 
 app.get('/api/dashboard', auth, (req, res) => {
